@@ -70,10 +70,8 @@ event_remove_event_handler(event_handler_t *h){
 
 void
 event_dispatch(SDL_Event *ev){
-	if(event_handler_list == NULL){
-		printf("event_handler_list is NULL in event_dispatch. Should not happen. Aborting.\n");
-		exit(1);
-	}
+	if(event_handler_list == NULL)
+		FATAL_ERROR("event_handler_list is NULL in event_dispatch. Should not happen. Aborting.");
 
 	linked_list_elm_t *e;
 
@@ -89,11 +87,9 @@ event_dispatch(SDL_Event *ev){
 
 static int
 handle_keypress_handlers(SDL_Event *e){
-	printf("handle_keypress_handlers\n\n");
 	if(e->type == SDL_KEYDOWN){
 		keypress_handler_t *h;
 		h = keypress_handler(e);
-		printf("h = %d\n", h);
 		if(h != NULL){
 			if(h->timer == 0) 
 				add_keypress_timer(h, e);
@@ -112,7 +108,6 @@ handle_keypress_handlers(SDL_Event *e){
 static Uint32 
 timer_callback(Uint32 interval, void *param){
 	SDL_Event *ep = param;
-	printf("Timer callback %d\n\n", ep->type == SDL_KEYDOWN);
 	SDL_PushEvent(ep);
 
 	return interval;
@@ -128,7 +123,6 @@ keypress_handler(SDL_Event *e){
 	while(elm != NULL){
 		keypress_handler_t *handler;
 		handler = elm->data;
-		printf("handler->sym = %d\ne->sym = %d\n\n", handler->sym, e->key.keysym.sym);
 		if (handler->sym == e->key.keysym.sym){
 			matched = elm;
 			break;

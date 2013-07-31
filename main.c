@@ -2,12 +2,18 @@
 #include <GL/gl.h>
 #include <stdio.h>
 
+#include "hud.h"
+#include "util.h"
 #include "event.h"
 #include "camera.h"
+#include "world.h"
 
 static SDL_Surface *screen;
 static int user_pressed_quit;
 static event_handler_t *quit_handler;
+static tile_t *cross_tile;
+
+void load_hud(void);
 
 void
 init_graphics(void){
@@ -16,9 +22,19 @@ init_graphics(void){
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);	
 
-	screen = SDL_SetVideoMode(800, 600, 24, SDL_OPENGL);
+	screen = SDL_SetVideoMode(800, 600, 32, SDL_OPENGL);
+
+	SDL_ShowCursor(0);
+	SDL_WM_GrabInput(SDL_GRAB_ON);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glEnable(GL_CULL_FACE);
+
+	load_hud();
 
 	camera_create();
+	camera_move(0, 0, -10);
 }
 
 void
@@ -61,6 +77,21 @@ cleanup_event_handlers(void){
 }
 
 void
+load_hud(void){
+	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff);
+}
+
+void
+draw_hud(void){
+	int x = (800 + cross_tile->w)/2;
+	int y = (800 + cross_tile->h)/2;
+	hud_draw_tile(x, y, -1, -1, cross_tile);
+
+	hud_draw_string(x, y+100, 60, 80, "111");
+}
+
+
+void
 draw_frame(void){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -71,12 +102,12 @@ draw_frame(void){
 
 	camera_load_modelview();
 
-	glBegin(GL_TRIANGLES);
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(-1.0f, 0.0f, 1.0f);
-	glVertex3f(1.0f, 0.0f, 1.0f);
-	glVertex3f(0.0f, 2.0f, 1.0f);
-	glEnd();
+	for(int i = 0; i < 8; i++)
+		for(int j = 0; j < 8; j++)
+			for(int k = 0; k < 8; k++)
+				renderblock(i,j,k);
+
+	draw_hud();
 }
 
 void
@@ -91,6 +122,7 @@ game_loop(void){
 	user_pressed_quit = 0;
 
 	event_init();
+	hud_init();
 	setup_event_handlers();
 	init_graphics();
 
@@ -109,6 +141,7 @@ game_loop(void){
 
 	cleanup_graphics();
 	cleanup_event_handlers();
+	hud_cleanup();
 	event_cleanup();
 }
 
