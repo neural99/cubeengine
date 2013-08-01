@@ -255,10 +255,10 @@ quad_mult(quaternion_t *res, quaternion_t *a, quaternion_t *b){
 }
 
 void
-quad_rotate(quaternion_t *q, double angle, double axis[3]){
-	q->x = axis[0] * sin(angle/2);
-	q->y = axis[1] * sin(angle/2);
-	q->z = axis[2] * sin(angle/2);
+quad_rotate(quaternion_t *q, double angle, quaternion_t *axis){
+	q->x = axis->x * sin(angle/2);
+	q->y = axis->y * sin(angle/2);
+	q->z = axis->z * sin(angle/2);
 	q->w = cos(angle/2);
 }
 

@@ -48,7 +48,7 @@ double quad_length(quaternion_t *q);
 void quad_normalize(quaternion_t *q);
 void quad_mult(quaternion_t *res, quaternion_t *a, quaternion_t *b);
 void quad_conjugate(quaternion_t *q);
-void quad_rotate(quaternion_t* q, double angle, double axis[3]);
+void quad_rotate(quaternion_t* q, double angle, quaternion_t *axis);
 void quad_applyrotation(quaternion_t *res, quaternion_t *rot);
 double quad_diff(quaternion_t *q1, quaternion_t *q2);
 

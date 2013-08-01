@@ -137,12 +137,10 @@ handle_mousemove(SDL_Event *e){
 
 	double forward_v[3];
 	double up_v[3];
-	double rot_axis[3];
-	double y_axis[3];
+	double rot_axis_v[3];
 
-	y_axis[0] = 0;
-	y_axis[1] = 1;
-	y_axis[2] = 0;
+	quaternion_t y_axis;
+	quaternion_t rot_axis;
 
 	forward_v[0] = camera->forward.x;
 	forward_v[1] = camera->forward.y;
@@ -151,7 +149,10 @@ handle_mousemove(SDL_Event *e){
 	up_v[1] = camera->up.y;
 	up_v[2] = camera->up.z;
 
-	crossproduct(rot_axis, forward_v, up_v);
+	crossproduct(rot_axis_v, forward_v, up_v);
+
+	rot_axis.x = rot_axis_v[0]; rot_axis.y = rot_axis_v[1]; rot_axis.z = rot_axis_v[2]; rot_axis.w = 1;
+	y_axis.x = 0; y_axis.y = 1; y_axis.z = 0; y_axis.w = 1;
 
 	quaternion_t rot1;
 	rot1.x = 0; rot1.y = 0; rot1.y = 0; rot1.z = 0; rot1.w = 1.0;
@@ -166,25 +167,21 @@ handle_mousemove(SDL_Event *e){
 	if(yrel != 0)
 		angle2 = 2 * PI * 0.01 / yrel;
 	if(angle1 != 0){
-		quad_rotate(&rot1, -angle1, y_axis);
+		quad_rotate(&rot1, -angle1, &y_axis);
 	}
 	if(angle2 != 0){
-		quad_rotate(&rot2, -angle2, rot_axis);
+		quad_rotate(&rot2, -angle2, &rot_axis);
 	}
 	quad_mult(&composite_rot, &rot1, &rot2);
 	quad_normalize(&composite_rot);
 
 	quaternion_t new_forward = camera->forward;
-	quaternion_t yaxis;
-	yaxis.x = 0.0;
-	yaxis.y = 1.0;
-	yaxis.z = 0.0;
-	yaxis.w = 1.0;
-	quaternion_t negyaxis = yaxis;
-	quad_conjugate(&negyaxis);
+	quaternion_t neg_y_axis = y_axis;
+	quad_conjugate(&neg_y_axis);
 
+	/* Avoid gimbal lock by aborting if we are too close to the y_axis */
 	quad_applyrotation(&new_forward, &composite_rot);
-	if(quad_diff(&yaxis, &new_forward) > 0.1 && quad_diff(&negyaxis, &new_forward) > 0.1){
+	if(quad_diff(&y_axis, &new_forward) > 0.1 && quad_diff(&neg_y_axis, &new_forward) > 0.1){
 		camera->forward = new_forward;
 		quad_applyrotation(&camera->up, &composite_rot);
 	}
