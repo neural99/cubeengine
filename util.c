@@ -214,12 +214,12 @@ util_anim_reset_anim_task(anim_task_t *t){
 	t->current_length = 0;
 }
 
-int
+double
 quad_length(quaternion_t *q){
 	return sqrt(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
 }
 
-int
+double
 quad_diff(quaternion_t *q1, quaternion_t *q2){
 	double dx = q2->x - q1->x;
 	double dy = q2->y - q1->y;
