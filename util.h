@@ -1,6 +1,8 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <SDL/sdl.h>
+
 #define PI 3.14159265359
 
 #define WINDOW_WIDTH 800
@@ -37,5 +39,20 @@ void normalize(double v[3]);
 void rotatearoundYaxis(double v[3], double radians);
 void rotatearoundXaxis(double v[3], double radians);
 void rotatearoundZaxis(double v[3], double radians);
+
+/* FPS independent Animation */
+typedef struct anim_task_s {
+	double units_per_second;
+	double total_length;
+	double current_length;
+	int is_active;
+	void (*update)(double scale_factor);
+} anim_task_t;
+
+void util_anim_update(Uint32 diff);
+void util_anim_add_anim_task(anim_task_t *a);
+void util_anim_remove_anim_task(anim_task_t *b);
+void util_anim_reset_anim_task(anim_task_t *t);
+anim_task_t* util_anim_create(double ups, double total, int is_active, void (*update)(double factor));
 
 #endif

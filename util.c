@@ -3,6 +3,8 @@
 #include <math.h>
 #include "util.h"
 
+static linked_list_t *animation_list = NULL;
+
 void
 util_fatalerror(char *file, int line, char *msg){
 	util_log_error(file, line, msg);
@@ -152,4 +154,62 @@ rotatearoundZaxis(double v[3], double radians){
 	v[0] = v[0] * cos(radians) - v[1] * sin(radians);
 	v[1] = v[0] * sin(radians) + v[1] * cos(radians);
 	v[2] = v[2];
+}
+
+void
+util_anim_update(Uint32 diff){
+	linked_list_elm_t *elm;
+
+	elm = animation_list->head;
+	while(elm != NULL){
+		anim_task_t *task = elm->data;
+		if(task->is_active){
+			double units_this_frame = task->units_per_second * diff / 1000;
+			if(units_this_frame + task->current_length < task->total_length){
+				task->current_length += units_this_frame;
+				task->update(units_this_frame);
+			}else{
+				double units_left = task->total_length - task->current_length;
+				task->update(units_left);
+				task->is_active = 0;
+				task->current_length = 0;
+			}
+
+		}
+		elm = elm->next;
+	}
+}
+
+void 
+util_anim_add_anim_task(anim_task_t *task){
+	if(animation_list == NULL)
+		animation_list = util_list_create();
+	util_list_add(animation_list, task);
+}
+
+void
+util_anim_remove_anim_task(anim_task_t *task){
+	util_list_remove(animation_list, task);
+	if(util_list_size(animation_list) == 0){
+		util_list_free(animation_list);
+		animation_list = NULL;
+	}
+}
+
+anim_task_t*
+util_anim_create(double ups, double total, int is_active, void (*update)(double factor)){
+	anim_task_t *tmp = malloc(sizeof(anim_task_t));
+	tmp->units_per_second = ups;
+	tmp->total_length = total;
+	tmp->current_length = 0;
+	tmp->is_active = is_active;
+	tmp->update = update;
+	util_anim_add_anim_task(tmp);
+	return tmp;
+}
+
+void
+util_anim_reset_anim_task(anim_task_t *t){
+	t->is_active = 1;
+	t->current_length = 0;
 }

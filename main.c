@@ -132,6 +132,11 @@ calc_fps(Uint32 now){
 }
 
 void
+do_logic(Uint32 diff){
+	util_anim_update(diff);
+}
+
+void
 game_loop(void){
 	user_pressed_quit = 0;
 
@@ -150,6 +155,7 @@ game_loop(void){
 		prev_ticks = curr_ticks;
 		curr_ticks = SDL_GetTicks();
 		calc_fps(curr_ticks);
+		do_logic(curr_ticks - prev_ticks);
 	}
 
 	cleanup_graphics();
