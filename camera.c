@@ -138,11 +138,11 @@ handle_mousemove(SDL_Event *e){
 	double forward_v[3];
 	double up_v[3];
 	double rot_axis[3];
-	double y_axis[3];
+	double up_axis[3];
 
-	y_axis[0] = 0.0;
-	y_axis[1] = 1.0;
-	y_axis[2] = 0.0;
+	up_axis[0] = camera->up.x;
+	up_axis[1] = camera->up.y;
+	up_axis[2] = camera->up.z;
 
 	forward_v[0] = camera->forward.x;
 	forward_v[1] = camera->forward.y;
@@ -166,7 +166,7 @@ handle_mousemove(SDL_Event *e){
 	if(yrel != 0)
 		angle2 = 2 * PI * 0.01 / yrel;
 	if(angle1 != 0){
-		quad_rotate(&rot1, -angle1, y_axis);
+		quad_rotate(&rot1, -angle1, up_axis);
 	}
 	if(angle2 != 0){
 		quad_rotate(&rot2, -angle2, rot_axis);

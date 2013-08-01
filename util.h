@@ -50,6 +50,7 @@ void quad_mult(quaternion_t *res, quaternion_t *a, quaternion_t *b);
 void quad_conjugate(quaternion_t *q);
 void quad_rotate(quaternion_t* q, double angle, double axis[3]);
 void quad_applyrotation(quaternion_t *res, quaternion_t *rot);
+int quad_diff(quaternion_t *q1, quaternion_t *q2);
 
 /* FPS independent Animation */
 typedef struct anim_task_s {

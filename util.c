@@ -219,6 +219,15 @@ quad_length(quaternion_t *q){
 	return sqrt(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
 }
 
+int
+quad_diff(quaternion_t *q1, quaternion_t *q2){
+	double dx = q2->x - q1->x;
+	double dy = q2->y - q1->y;
+	double dz = q2->z - q1->z;
+	double dw = q2->w - q1->w;
+	return sqrt(dx*dx + dy*dy + dz*dz + dw*dw);
+}
+
 void
 quad_normalize(quaternion_t *q){
 	int len = quad_length(q);
