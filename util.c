@@ -213,3 +213,53 @@ util_anim_reset_anim_task(anim_task_t *t){
 	t->is_active = 1;
 	t->current_length = 0;
 }
+
+int
+quad_length(quaternion_t *q){
+	return sqrt(q->x * q->x + q->y * q->y + q->z * q->z + q->w * q->w);
+}
+
+void
+quad_normalize(quaternion_t *q){
+	int len = quad_length(q);
+	if(len != 0){
+		q->x = q->x / len;
+		q->y = q->y / len;
+		q->z = q->z / len;
+		q->w = q->w / len;
+	}
+}
+
+void
+quad_conjugate(quaternion_t *q){
+	q->x = -q->x;
+	q->y = -q->y;
+	q->z = -q->z;
+}
+
+void 
+quad_mult(quaternion_t *res, quaternion_t *a, quaternion_t *b){
+	res->x = a->w*b->x + a->x*b->w + a->y*b->z - a->z*b->y;
+	res->y = a->w*b->y - a->x*b->z + a->y*b->w + a->z*b->x;
+	res->z = a->w*b->z + a->x*b->y - a->y*b->x + a->z*b->w;
+	res->w = a->w*b->w - a->x*b->x - a->y*b->y - a->z*b->z;
+}
+
+void
+quad_rotate(quaternion_t *q, double angle, double axis[3]){
+	q->x = axis[0] * sin(angle/2);
+	q->y = axis[1] * sin(angle/2);
+	q->z = axis[2] * sin(angle/2);
+	q->w = cos(angle/2);
+}
+
+void
+quad_applyrotation(quaternion_t *res, quaternion_t *rot){
+	quaternion_t conj_rot;
+	memcpy(&conj_rot, rot, sizeof(quaternion_t));
+	quad_conjugate(&conj_rot);
+
+	quaternion_t tmp;
+	quad_mult(&tmp, rot, res);
+	quad_mult(res, &tmp, &conj_rot);
+}

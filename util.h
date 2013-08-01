@@ -40,6 +40,17 @@ void rotatearoundYaxis(double v[3], double radians);
 void rotatearoundXaxis(double v[3], double radians);
 void rotatearoundZaxis(double v[3], double radians);
 
+typedef struct quaternion_s {
+	double x, y, z, w;
+} quaternion_t;
+
+int quad_length(quaternion_t *q);
+void quad_normalize(quaternion_t *q);
+void quad_mult(quaternion_t *res, quaternion_t *a, quaternion_t *b);
+void quad_conjugate(quaternion_t *q);
+void quad_rotate(quaternion_t* q, double angle, double axis[3]);
+void quad_applyrotation(quaternion_t *res, quaternion_t *rot);
+
 /* FPS independent Animation */
 typedef struct anim_task_s {
 	double units_per_second;

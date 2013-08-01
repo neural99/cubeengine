@@ -12,8 +12,9 @@
 
 typedef struct camera_s {
 	double eye[3];
-	double forward[3];
-	double up[3];
+
+	quaternion_t forward;
+	quaternion_t up;
 } camera_t;
 
 SDLKey listen_keys[4] = {SDLK_w, SDLK_s, SDLK_a, SDLK_d};
@@ -36,11 +37,11 @@ static void add_anim_tasks(void);
 static void remove_anim_tasks(void);
 
 void
-camera_create(void){
-	camera_t *tmp = malloc(sizeof(camera_t));
+camera_create(void){ camera_t *tmp = malloc(sizeof(camera_t));
 	tmp->eye[0] = 0.0; tmp->eye[1] = 0.0; tmp->eye[2] = 0.0;
-	tmp->forward[0] = 0.0; tmp->forward[1] = 0.0; tmp->forward[2] = 1.0;
-	tmp->up[0] = 0.0; tmp->up[1] = 1.0; tmp->up[2] = 0.0;
+	tmp->forward.x = 0.0; tmp->forward.y = 0.0; tmp->forward.z = 1.0; tmp->forward.w = 1.0; 
+	tmp->up.x = 0.0; tmp->up.y = 1.0; tmp->up.z = 0.0; tmp->up.w = 1.0;
+	//tmp->rot.x = 0.0; tmp->rot.y = 0.0; tmp->rot.z = 0.0; tmp->rot.w = 1.0; 
 
 	camera = tmp;
 
@@ -114,9 +115,9 @@ handle_wireframe_key(SDL_Event *e){
 
 static int 
 handle_keypress(SDL_Event *e){
-	printf("eye = (%f %f %f), forward= (%f %f %f), up = (%f %f %f)\n", camera->eye[0], camera->eye[1], camera->eye[2],
-		       						 	   camera->forward[0], camera->forward[1], camera->forward[2],
-									   camera->up[0], camera->up[1], camera->up[2]);
+	printf("eye = (%f %f %f), forward= (%f %f %f %f), up = (%f %f %f %f)\n", camera->eye[0], camera->eye[1], camera->eye[2],
+		       				     camera->forward.x, camera->forward.y, camera->forward.z, camera->forward.w,
+					     	   camera->up.x, camera->up.y, camera->up.z, camera->up.w);
 	SDLKey sym = e->key.keysym.sym;
 	if(sym == SDLK_w)
 		util_anim_reset_anim_task(animation_tasks[0]);
@@ -131,11 +132,32 @@ handle_keypress(SDL_Event *e){
 
 static int 
 handle_mousemove(SDL_Event *e){
-	printf("eye = (%f %f %f), forward= (%f %f %f), up = (%f %f %f)\n", camera->eye[0], camera->eye[1], camera->eye[2],
-		       						 	   camera->forward[0], camera->forward[1], camera->forward[2],
-									   camera->up[0], camera->up[1], camera->up[2]);
 	int xrel = e->motion.xrel;
 	int yrel = e->motion.yrel;
+
+	double forward_v[3];
+	double up_v[3];
+	double rot_axis[3];
+	double y_axis[3];
+
+	y_axis[0] = 0.0;
+	y_axis[1] = 1.0;
+	y_axis[2] = 0.0;
+
+	forward_v[0] = camera->forward.x;
+	forward_v[1] = camera->forward.y;
+	forward_v[2] = camera->forward.z;
+	up_v[0] = camera->up.x;
+	up_v[1] = camera->up.y;
+	up_v[2] = camera->up.z;
+
+	crossproduct(rot_axis, forward_v, up_v);
+
+	quaternion_t rot1;
+	rot1.x = 0; rot1.y = 0; rot1.y = 0; rot1.z = 0; rot1.w = 1.0;
+	quaternion_t rot2;
+	rot2.x = 0; rot2.y = 0; rot2.y = 0; rot2.z = 0; rot2.w = 1.0;
+	quaternion_t composite_rot;
 
 	double angle1 = 0;
 	double angle2 = 0;
@@ -143,12 +165,20 @@ handle_mousemove(SDL_Event *e){
 		angle1 = 2 * PI * 0.01 / xrel;
 	if(yrel != 0)
 		angle2 = 2 * PI * 0.01 / yrel;
-	if(angle1 != 0)
-		rotatearoundYaxis(camera->forward, -angle1);
-	if(angle2 != 0)
-		rotatearoundXaxis(camera->forward, angle2);	
+	if(angle1 != 0){
+		quad_rotate(&rot1, -angle1, y_axis);
+	}
+	if(angle2 != 0){
+		quad_rotate(&rot2, -angle2, rot_axis);
+	}
+	quad_mult(&composite_rot, &rot1, &rot2);
+	quad_normalize(&composite_rot);
 
-	normalize(camera->forward);
+	quad_applyrotation(&camera->forward, &composite_rot);
+	quad_applyrotation(&camera->up, &composite_rot);
+
+	quad_normalize(&camera->forward);
+	quad_normalize(&camera->up);
 
 	return 0;
 }
@@ -156,33 +186,43 @@ handle_mousemove(SDL_Event *e){
 void
 camera_load_modelview(void){
 	double center[3];
-	center[0] = camera->eye[0] + camera->forward[0];
-	center[1] = camera->eye[1] + camera->forward[1];
-	center[2] = camera->eye[2] + camera->forward[2];
+	center[0] = camera->eye[0] + camera->forward.x;
+	center[1] = camera->eye[1] + camera->forward.y;
+	center[2] = camera->eye[2] + camera->forward.z;
 
 	gluLookAt(camera->eye[0], camera->eye[1], camera->eye[2], 
 		  center[0], center[1], center[2],
-		  camera->up[0], camera->up[1], camera->up[2]);
+		  camera->up.x, camera->up.y, camera->up.z);
 }
 
 static void
 move_forward(double factor){
-	camera->eye[0] += camera->forward[0] * factor;
-	camera->eye[1] += camera->forward[1] * factor;
-	camera->eye[2] += camera->forward[2] * factor;
+	camera->eye[0] += camera->forward.x * factor;
+	camera->eye[1] += camera->forward.y * factor;
+	camera->eye[2] += camera->forward.z * factor;
 }
 
 static void 
 move_backward(double factor){
-	camera->eye[0] -= camera->forward[0] * factor;
-	camera->eye[1] -= camera->forward[1] * factor;
-	camera->eye[2] -= camera->forward[2] * factor;
+	camera->eye[0] -= camera->forward.x * factor;
+	camera->eye[1] -= camera->forward.y * factor;
+	camera->eye[2] -= camera->forward.z * factor;
 }
 
 static void 
 move_left(double factor){
 	double n[3];
-	crossproduct(n, camera->up, camera->forward);
+	double forward_v[3];
+	double up_v[3];
+
+	forward_v[0] = camera->forward.x;
+	forward_v[1] = camera->forward.y;
+	forward_v[2] = camera->forward.z;
+	up_v[0] = camera->up.x;
+	up_v[1] = camera->up.y;
+	up_v[2] = camera->up.z;
+
+	crossproduct(n, up_v, forward_v);
 	normalize(n);
 
 	//printf("n=(%f %f %f)\n", n[0], n[1], n[2]);
@@ -195,7 +235,17 @@ move_left(double factor){
 static void
 move_right(double factor){
 	double n[3];
-	crossproduct(n, camera->forward, camera->up);
+	double forward_v[3];
+	double up_v[3];
+
+	forward_v[0] = camera->forward.x;
+	forward_v[1] = camera->forward.y;
+	forward_v[2] = camera->forward.z;
+	up_v[0] = camera->up.x;
+	up_v[1] = camera->up.y;
+	up_v[2] = camera->up.z;
+
+	crossproduct(n, forward_v, up_v);
 	normalize(n);
 
 	camera->eye[0] += n[0] * factor; 
