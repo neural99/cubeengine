@@ -23,7 +23,7 @@ init_graphics(void){
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);	
 
-	screen = SDL_SetVideoMode(800, 600, 32, SDL_OPENGL);
+	screen = SDL_SetVideoMode(WINDOW_WIDTH, WINDOW_HEIGHT, 32, SDL_OPENGL);
 
 	SDL_ShowCursor(0);
 	SDL_WM_GrabInput(SDL_GRAB_ON);
@@ -85,15 +85,15 @@ load_hud(void){
 
 void
 draw_hud(void){
-	int x = (800 + cross_tile->w)/2;
-	int y = (800 + cross_tile->h)/2;
+	int x = (WINDOW_WIDTH - cross_tile->w)/2;
+	int y = (WINDOW_HEIGHT + cross_tile->h)/2;
 	hud_draw_tile(x, y, -1, -1, cross_tile);
 
+	/* draw fps */
  	char buff[100];
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "%u", last_fps);
-	hud_draw_string(400, 400, 6, 8, buff);
-
+	hud_draw_string(5, 565, 24, 32, buff);
 }
 
 
@@ -117,9 +117,17 @@ draw_frame(void){
 }
 
 void
-display_fps(Uint32 diff){
-	if (diff != 0){
-		last_fps = 1000/diff;
+calc_fps(Uint32 now){
+	static Uint32 frames = 0;
+	static Uint32 ticks_last_updated = 0;
+	if(ticks_last_updated == 0)
+		ticks_last_updated = now;
+	if(now - ticks_last_updated > 1e3){
+		last_fps = frames;
+		frames = 0;
+		ticks_last_updated = now;
+	}else{
+		frames++;
 	}
 }
 
@@ -141,7 +149,7 @@ game_loop(void){
 
 		prev_ticks = curr_ticks;
 		curr_ticks = SDL_GetTicks();
-		display_fps(curr_ticks - prev_ticks);
+		calc_fps(curr_ticks);
 	}
 
 	cleanup_graphics();

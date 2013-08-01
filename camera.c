@@ -80,10 +80,10 @@ camera_free(void){
 
 void
 camera_load_perspective(void){
-	glViewport(0, 0, 800, 800);
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	double aspect = 800 / 800;
+	double aspect = WINDOW_WIDTH / WINDOW_HEIGHT;
 	glOrtho(-aspect, aspect, -1, 1, -1, 1);
 	gluPerspective(60.0, aspect, 0.01, 10000.0);
 	

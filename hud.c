@@ -6,8 +6,7 @@
 #include "hud.h"
 
 static tileset_t *font_tileset;
-static tile_t *font_tile;
-static int font_characters[][2] = { { '0', 16 },
+static int font_characters[][2] = {{ '0', 16 },
 				   { '1', 17 },
 				   { '2', 18 },
 				   { '3', 19 },
@@ -17,6 +16,8 @@ static int font_characters[][2] = { { '0', 16 },
 				   { '7', 23 },
 				   { '8', 24 },
 				   { '9', 25 }};
+
+static void draw_quad_with_texture(int x, int y, int width, int height, GLuint texId);
 
 void 
 hud_init(void){
@@ -109,55 +110,42 @@ void
 hud_draw_tile_from_tileset(int x, int y, int w, int h, int index, tileset_t *tileset){
 	int width = w != -1 ? w : tileset->w;
 	int height = h != -1 ? h : tileset->h;
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	glOrtho(0.0, 800, 800, 0.0, -1.0, 10.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glClear(GL_DEPTH_BUFFER_BIT);	
-
-	glBindTexture(GL_TEXTURE_2D, tileset->textureIds[index]);
- 
-	glColor4f(1.0,1.0,1.0,1.0);
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE);
-	glEnable(GL_BLEND);
-	glEnable(GL_TEXTURE_2D);
-	glDisable(GL_CULL_FACE);
-	glBegin(GL_QUADS);
-	    glTexCoord2f(0, 0); glVertex3f(x, y, 0);
-	    glTexCoord2f(1, 0); glVertex3f(x + width, y, 0);
-	    glTexCoord2f(1, 1); glVertex3f(x + width, y + height, 0);
-	    glTexCoord2f(0, 1); glVertex3f(x, y + height, 0);
-	glEnd();
-	glEnable(GL_CULL_FACE);
-	glDisable(GL_TEXTURE_2D);
+	draw_quad_with_texture(x, y, width, height, tileset->textureIds[index]);
 }
 
 void
 hud_draw_tile(int x, int y, int w, int h, tile_t *tile){
 	int width = w != -1 ? w : tile->w;
 	int height = h != -1 ? h : tile->h;
+	draw_quad_with_texture(x, y, width, height, tile->textureId);
+}
+
+static void
+draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
+	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0.0, 800, 800, 0.0, -1.0, 10.0);
+	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, 0.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glClear(GL_DEPTH_BUFFER_BIT);	
 
-	glBindTexture(GL_TEXTURE_2D, tile->textureId);
+	glBindTexture(GL_TEXTURE_2D, texId);
  
 	glColor4f(1.0,1.0,1.0,1.0);
 	glBlendFunc(GL_SRC_ALPHA,GL_ONE);
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
 	glBegin(GL_QUADS);
-	    glTexCoord2f(0, 0); glVertex3f(x, y, 0);
-	    glTexCoord2f(1, 0); glVertex3f(x + width, y, 0);
-	    glTexCoord2f(1, 1); glVertex3f(x + width, y + height, 0);
-	    glTexCoord2f(0, 1); glVertex3f(x, y + height, 0);
+	    glTexCoord2f(0, 1); glVertex3f(x, y, 0);
+	    glTexCoord2f(1, 1); glVertex3f(x + width, y, 0);
+	    glTexCoord2f(1, 0); glVertex3f(x + width, y + height, 0);
+	    glTexCoord2f(0, 0); glVertex3f(x, y + height, 0);
 	glEnd();
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_TEXTURE_2D);
 }
 

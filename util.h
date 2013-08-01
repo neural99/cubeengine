@@ -3,6 +3,9 @@
 
 #define PI 3.14159265359
 
+#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 600
+
 /* Logging */
 #define FATAL_ERROR(str) (util_fatalerror(__FILE__,__LINE__,str))
 

@@ -3,7 +3,6 @@
 #include <math.h>
 #include "util.h"
 
-
 void
 util_fatalerror(char *file, int line, char *msg){
 	util_log_error(file, line, msg);
