@@ -12,6 +12,7 @@ static SDL_Surface *screen;
 static int user_pressed_quit;
 static event_handler_t *quit_handler;
 static tile_t *cross_tile;
+static Uint32 last_fps = 0;
 
 void load_hud(void);
 
@@ -78,7 +79,8 @@ cleanup_event_handlers(void){
 
 void
 load_hud(void){
-	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff);
+	hud_init();
+	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff, GL_LINEAR);
 }
 
 void
@@ -87,7 +89,11 @@ draw_hud(void){
 	int y = (800 + cross_tile->h)/2;
 	hud_draw_tile(x, y, -1, -1, cross_tile);
 
-	hud_draw_string(x, y+100, 60, 80, "111");
+ 	char buff[100];
+	memset(buff, 0, 100);
+	snprintf(buff, 100, "%u", last_fps);
+	hud_draw_string(400, 400, 6, 8, buff);
+
 }
 
 
@@ -113,7 +119,7 @@ draw_frame(void){
 void
 display_fps(Uint32 diff){
 	if (diff != 0){
-		Uint32 fps = 1000/diff;
+		last_fps = 1000/diff;
 	}
 }
 
@@ -122,7 +128,6 @@ game_loop(void){
 	user_pressed_quit = 0;
 
 	event_init();
-	hud_init();
 	setup_event_handlers();
 	init_graphics();
 
@@ -132,11 +137,11 @@ game_loop(void){
 		handle_SDL_events();
 		draw_frame();
 
+		SDL_GL_SwapBuffers();
+
 		prev_ticks = curr_ticks;
 		curr_ticks = SDL_GetTicks();
 		display_fps(curr_ticks - prev_ticks);
-
-		SDL_GL_SwapBuffers();
 	}
 
 	cleanup_graphics();

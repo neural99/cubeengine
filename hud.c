@@ -6,6 +6,7 @@
 #include "hud.h"
 
 static tileset_t *font_tileset;
+static tile_t *font_tile;
 static int font_characters[][2] = { { '0', 16 },
 				   { '1', 17 },
 				   { '2', 18 },
@@ -19,7 +20,7 @@ static int font_characters[][2] = { { '0', 16 },
 
 void 
 hud_init(void){
-	font_tileset = hud_load_tileset("font.bmp", 6, 8, 16, 6, 1, 0xFF, 0x00, 0xFF);
+	font_tileset = hud_load_tileset("font.bmp", 6, 8, 16, 6, 1, 0xFF, 0x00, 0x00, GL_NEAREST);
 }
 
 void
@@ -56,7 +57,7 @@ hud_draw_string(int x, int y, int w, int h, char *str){
 }
 
 tileset_t*
-hud_load_tileset(char *path, int tw, int th, int nw, int nh, int border, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b){
+hud_load_tileset(char *path, int tw, int th, int nw, int nh, int border, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b, GLint filter){
 	SDL_Surface *image = SDL_LoadBMP(path);
 	if(image == NULL){
 		char buff[100];
@@ -93,8 +94,8 @@ hud_load_tileset(char *path, int tw, int th, int nw, int nh, int border, Uint8 c
 			
 			glBindTexture(GL_TEXTURE_2D, tileset->textureIds[j * nw + i]);
 			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, tmp->pixels);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
 			SDL_FreeSurface(tmp);
 		}
@@ -161,7 +162,7 @@ hud_draw_tile(int x, int y, int w, int h, tile_t *tile){
 }
 
 tile_t*
-hud_load_single_tile(char *path, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b){
+hud_load_single_tile(char *path, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b, GLint filter){
 	SDL_Surface *image = SDL_LoadBMP(path);
 	if(image == NULL){
 		char buff[100];
@@ -191,8 +192,8 @@ hud_load_single_tile(char *path, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b){
 	glGenTextures(1, &tile->textureId);
 	glBindTexture(GL_TEXTURE_2D, tile->textureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tmp->w, tmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tmp->pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
 
 	tile->w = tmp->w;
 	tile->h = tmp->h;

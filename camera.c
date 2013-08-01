@@ -91,7 +91,8 @@ camera_load_perspective(void){
 }
 
 
-int handle_wireframe_key(SDL_Event *e){
+int
+handle_wireframe_key(SDL_Event *e){
 	static int iswireframe = 0;
 	if(!iswireframe)
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

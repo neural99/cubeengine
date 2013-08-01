@@ -1,6 +1,8 @@
 #ifndef __HUD_H__
 #define __HUD_H__
 
+#include <GL/gl.h>
+
 typedef struct tile_s {
 	int w;
 	int h;
@@ -18,8 +20,8 @@ typedef struct tileset_s {
 
 void hud_init(void);
 
-tileset_t* hud_load_tileset(char *path, int tw, int th, int nw, int nh, int border, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b);
-tile_t* hud_load_single_tile(char *path, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b);
+tileset_t* hud_load_tileset(char *path, int tw, int th, int nw, int nh, int border, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b, GLint filter);
+tile_t* hud_load_single_tile(char *path, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b, GLint filter);
 void hud_unload_tile(tile_t *tile);
 void hud_unload_tileset(tileset_t *set);
 void hud_draw_tile(int x, int y, int w, int h, tile_t *tile);
