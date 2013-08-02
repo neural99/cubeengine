@@ -13,6 +13,7 @@ static int user_pressed_quit;
 static event_handler_t *quit_handler;
 static tile_t *cross_tile;
 static Uint32 last_fps = 0;
+static chunk_t *chunk;
 
 void load_hud(void);
 
@@ -94,6 +95,9 @@ draw_hud(void){
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "%u", last_fps);
 	hud_draw_string(5, 565, 24, 32, buff);
+
+	snprintf(buff, 100, "trigs:%d, vert:%d", chunk->mesh->n_trigs, chunk->mesh->n_verticies);
+	hud_draw_string(5, 550, 12, 16, buff);
 }
 
 
@@ -108,10 +112,13 @@ draw_frame(void){
 
 	camera_load_modelview();
 
+	/*
 	for(int i = 0; i < 8; i++)
 		for(int j = 0; j < 8; j++)
 			for(int k = 0; k < 8; k++)
 				renderblock(i,j,k);
+	*/
+	chunk_render(chunk);
 
 	draw_hud();
 }
@@ -143,6 +150,8 @@ game_loop(void){
 	event_init();
 	setup_event_handlers();
 	init_graphics();
+
+	chunk = chunk_create();
 
 	Uint32 prev_ticks, curr_ticks;
 	curr_ticks = SDL_GetTicks();

@@ -38,6 +38,21 @@ util_list_free(linked_list_t *lst){
 	free(lst);
 }
 
+void
+util_list_free_data(linked_list_t *lst){
+	linked_list_elm_t *elm;
+
+	elm = lst->head;
+	while(elm != NULL){
+		linked_list_elm_t *next = elm->next;
+		free(elm->data);
+		free(elm);
+		elm = next;
+	}
+
+	free(lst);
+}
+
 void 
 util_list_add(linked_list_t *lst, void *data){
 	linked_list_elm_t* elm; 
