@@ -176,6 +176,10 @@ hud_draw_tile(int x, int y, int w, int h, tile_t *tile){
 
 static void
 draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
+	GLint polymode;
+	glGetIntegerv(GL_POLYGON_MODE, &polymode);
+	if(polymode == GL_LINE)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
@@ -200,6 +204,8 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	glEnable(GL_CULL_FACE);
 	glDisable(GL_TEXTURE_2D);
 	glDepthMask(GL_TRUE);
+	if(polymode == GL_LINE)
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 }
 
 tile_t*
