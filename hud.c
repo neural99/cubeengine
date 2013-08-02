@@ -15,7 +15,61 @@ static int font_characters[][2] = {{ '0', 16 },
 				   { '6', 22 },
 				   { '7', 23 },
 				   { '8', 24 },
-				   { '9', 25 }};
+				   { '9', 25 },
+				   { 'A', 33 },
+				   { 'a', 33 },
+				   { 'B', 34 },
+				   { 'b', 34 },
+				   { 'C', 35 },
+				   { 'c', 35 },
+				   { 'D', 36 },
+				   { 'd', 36 },
+				   { 'E', 37 },
+				   { 'e', 37 },
+				   { 'F', 38 },
+				   { 'f', 38 },
+				   { 'G', 39 },
+				   { 'g', 39 },
+				   { 'H', 40 },
+				   { 'h', 40 },
+				   { 'I', 41 },
+				   { 'i', 41 },
+				   { 'J', 42 },
+				   { 'j', 42 },
+				   { 'K', 43 },
+				   { 'k', 43 },
+				   { 'L', 44 },
+				   { 'l', 44 },
+				   { 'M', 45 },
+				   { 'm', 45 },
+				   { 'N', 46 },
+				   { 'n', 46 },
+				   { 'O', 47 },
+				   { 'o', 47 },
+				   { 'P', 48 },
+				   { 'p', 48 },
+				   { 'Q', 49 },
+				   { 'q', 49 },
+				   { 'R', 50 },
+				   { 'r', 50 },
+				   { 'S', 51 },
+				   { 's', 51 },
+				   { 'T', 52 },
+				   { 't', 52 },
+				   { 'U', 53 },
+				   { 'u', 53 },
+				   { 'V', 54 },
+				   { 'v', 54 },
+				   { 'W', 55 },
+				   { 'w', 55 },
+				   { 'X', 56 },
+				   { 'x', 56 },
+				   { 'Y', 57 },
+				   { 'y', 57 },
+				   { 'Z', 58 },
+				   { 'z', 58 },
+				   { ':', 26 },
+				   { ' ', 0  }};
 
 static void draw_quad_with_texture(int x, int y, int width, int height, GLuint texId);
 
@@ -38,7 +92,7 @@ hud_unload_tileset(tileset_t *tileset){
 
 int
 find_fontcharacter(char ch){
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < 64; i++)
 		if (ch == font_characters[i][0])
 			return font_characters[i][1];
 	return -1;
@@ -50,6 +104,7 @@ hud_draw_string(int x, int y, int w, int h, char *str){
 	int i = 0;
 	while(*p != 0){
 		int ind = find_fontcharacter(*p);
+		printf("p=%c,ind=%d\n", *p, ind);
 		if(ind != -1)
 			hud_draw_tile_from_tileset(x + i * w, y, w, h, ind, font_tileset);
 		i++;

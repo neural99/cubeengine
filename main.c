@@ -96,7 +96,8 @@ draw_hud(void){
 	snprintf(buff, 100, "%u", last_fps);
 	hud_draw_string(5, 565, 24, 32, buff);
 
-	snprintf(buff, 100, "trigs:%d, vert:%d", chunk->mesh->n_trigs, chunk->mesh->n_verticies);
+	memset(buff, 0, 100);
+	snprintf(buff, 100, "trigs:%d vert:%d", chunk->mesh->n_trigs, chunk->mesh->n_verticies);
 	hud_draw_string(5, 550, 12, 16, buff);
 }
 
