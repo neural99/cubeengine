@@ -58,16 +58,16 @@ renderblock(int x, int y, int z){
 
 void
 add_block_to_mesh(int x, int y, int z, mesh_t *mesh){
-	float p1[3] = { x, y, z };		
-	float p2[3] = { x + 1.0, y, z };
-	float p3[3] = { x + 1.0, y + 1.0, z };
-	float p4[3] = { x, y + 1.0, z };
+	float p1[3] = { x - 1.0, y - 1.0, z + 1.0 };		
+	float p2[3] = { x + 1.0, y - 1.0, z + 1.0};
+	float p3[3] = { x + 1.0, y + 1.0, z + 1.0};
+	float p4[3] = { x - 1.0, y + 1.0, z + 1.0};
 
-	float p5[3] = { x, y, z + 1.0 };
-	float p6[3] = { x + 1.0, y, z + 1.0 };
-	float p7[3] = { x + 1.0, y + 1.0, z + 1.0 };
-	float p8[3] = { x, y + 1.0, z + 1.0 };
-
+	float p5[3] = { x + 1.0, y - 1.0, z - 1.0 };
+	float p6[3] = { x - 1.0, y - 1.0, z - 1.0 };
+	float p7[3] = { x - 1.0, y + 1.0, z - 1.0 };
+	float p8[3] = { x + 1.0, y + 1.0, z - 1.0 };
+	
 	int i1 = mesh_add_vertex(mesh, p1);
 	int i2 = mesh_add_vertex(mesh, p2);
 	int i3 = mesh_add_vertex(mesh, p3);
@@ -79,27 +79,27 @@ add_block_to_mesh(int x, int y, int z, mesh_t *mesh){
 
 	/* Front */
 	mesh_add_trig(mesh, i1, i2, i3);
-	mesh_add_trig(mesh, i3, i4, i1);
+	mesh_add_trig(mesh, i1, i3, i4);
 
 	/* Back */
-	mesh_add_trig(mesh, i6, i5, i8);
-	mesh_add_trig(mesh, i8, i7, i6);
+	mesh_add_trig(mesh, i5, i6, i7);
+	mesh_add_trig(mesh, i5, i7, i8);
 
 	/* Top */
-	mesh_add_trig(mesh, i3, i4, i8);
-	mesh_add_trig(mesh, i8, i7, i3);
+	mesh_add_trig(mesh, i4, i3, i8);
+	mesh_add_trig(mesh, i4, i8, i7);
 
 	/* Bottom */
+	mesh_add_trig(mesh, i6, i5, i2);
 	mesh_add_trig(mesh, i6, i2, i1);
-	mesh_add_trig(mesh, i1, i5, i6);
 
 	/* Left */
-	mesh_add_trig(mesh, i1, i4, i8);
-	mesh_add_trig(mesh, i8, i5, i1);
+	mesh_add_trig(mesh, i6, i1, i4);
+	mesh_add_trig(mesh, i6, i4, i7);
 
 	/* Right */
-	mesh_add_trig(mesh, i2, i3, i7);
-	mesh_add_trig(mesh, i7, i6, i2);
+	mesh_add_trig(mesh, i2, i5, i8);
+	mesh_add_trig(mesh, i2, i8, i3);
 }
 
 
@@ -107,13 +107,10 @@ void
 chunk_build_mesh(chunk_t *chunk){
 	for(int i = 0; i < CHUNK_SIZE; i++)
 		for(int j = 0; j < CHUNK_SIZE; j++)
-			for(int k = 0; k < CHUNK_SIZE; k++){
-				printf("0x%X\n", block_isactive(chunk->blocks[i][j][k]));
-				if(block_isactive(chunk->blocks[i][j][k])){
-					printf("%X\n", chunk->blocks[i][j][k]);
+			for(int k = 0; k < CHUNK_SIZE; k++)
+				if(block_isactive(chunk->blocks[i][j][k]))
 					add_block_to_mesh(i, j, k, chunk->mesh);
-				}
-			}
+			
 }
 
 void
@@ -199,6 +196,30 @@ copy_index_data(GLuint *data, mesh_t *m){
 	}
 }
 
+static void
+print_vertex_data(float *data, int size){
+	float *p = data;
+	int i = 0; 
+	while(i < size){
+		printf("%f %f %f\n", p[0], p[1], p[2]);
+
+		i++;
+		p+=3;
+	}
+}
+
+static void
+print_index_data(GLuint *data, int size){
+	GLuint *p = data;
+	int i = 0; 
+	while(i < size){
+		printf("%u %u %u\n", p[0], p[1], p[2]);
+
+		i++;
+		p+=3;
+	}
+}
+
 void
 mesh_rebuild(mesh_t *m){
 	/* Delete buffers if present */
@@ -213,6 +234,7 @@ mesh_rebuild(mesh_t *m){
 	if(vertex_data == NULL)
 		FATAL_ERROR("Out of memory");
 	copy_vertex_data(vertex_data, m);
+	print_vertex_data(vertex_data, m->n_verticies);
 	glGenBuffers(1, &m->vertexId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
 	glBufferData(GL_ARRAY_BUFFER, size, vertex_data, GL_STATIC_DRAW);
@@ -224,6 +246,7 @@ mesh_rebuild(mesh_t *m){
 	if(index_data == NULL)
 		FATAL_ERROR("Out of memory");
 	copy_index_data(index_data, m);
+	print_index_data(index_data, m->n_trigs);
 	glGenBuffers(1, &m->elementId);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index_data, GL_STATIC_DRAW);
@@ -232,19 +255,18 @@ mesh_rebuild(mesh_t *m){
 
 void 
 mesh_render(mesh_t *m){
-	glVertexPointer(3, GL_FLOAT, 0, NULL);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);	
+	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, NULL);
+	glEnableVertexAttribArray(0);
 
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);	
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glDrawElements(
 			GL_TRIANGLES, 
-			m->n_trigs,
+			m->n_trigs * 3,
 			GL_UNSIGNED_INT,
 			NULL
 		      );
-
-	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void
@@ -260,6 +282,8 @@ chunk_create(void){
 		for(int j = 0; j < CHUNK_SIZE; j++)
 			for(int k = 0; k < CHUNK_SIZE; k++)
 				tmp->blocks[i][j][k] = 0x80000000;
+
+	//tmp->blocks[0][0][0] = 0x80000000;
 	tmp->mesh = mesh_create();
 
 	chunk_rebuild(tmp);

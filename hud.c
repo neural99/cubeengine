@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <SDL/sdl.h>
-#include <GL/gl.h>
+#include <GL/glee.h>
 
 #include "util.h"
 #include "hud.h"
@@ -104,7 +104,6 @@ hud_draw_string(int x, int y, int w, int h, char *str){
 	int i = 0;
 	while(*p != 0){
 		int ind = find_fontcharacter(*p);
-		printf("p=%c,ind=%d\n", *p, ind);
 		if(ind != -1)
 			hud_draw_tile_from_tileset(x + i * w, y, w, h, ind, font_tileset);
 		i++;
@@ -183,16 +182,15 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	glOrtho(0.0, WINDOW_WIDTH, 0.0, WINDOW_HEIGHT, 0.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	glClear(GL_DEPTH_BUFFER_BIT);	
-
-	glBindTexture(GL_TEXTURE_2D, texId);
- 
-	glColor4f(1.0,1.0,1.0,1.0);
-	glBlendFunc(GL_SRC_ALPHA,GL_ONE);
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
+	glClear(GL_DEPTH_BUFFER_BIT);	
+	glDepthMask(GL_FALSE);
+	glBindTexture(GL_TEXTURE_2D, texId);
+	glColor4f(1.0,1.0,1.0,1.0);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBegin(GL_QUADS);
 	    glTexCoord2f(0, 1); glVertex3f(x, y, 0);
 	    glTexCoord2f(1, 1); glVertex3f(x + width, y, 0);
@@ -200,8 +198,8 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	    glTexCoord2f(0, 0); glVertex3f(x, y + height, 0);
 	glEnd();
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_TEXTURE_2D);
+	glDepthMask(GL_TRUE);
 }
 
 tile_t*
