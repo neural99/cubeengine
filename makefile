@@ -5,7 +5,7 @@ LDFLAGS = -lmingw32 -lSDLmain -lSDL -lSDL -lopengl32 -lglu32
 C_FILES := main.c event.c camera.c util.c world.c hud.c
 OBJS := main.o event.o camera.o util.o world.o hud.o
 
-all: cubeengine 
+all: cubeengine heightmap2wrl 
 
 tests: utiltest
 
@@ -20,5 +20,8 @@ clean: FRC
 
 utiltest: utiltest.c util.c
 	gcc -std=c99 -o utiltest utiltest.c util.c
+
+heightmap2wrl: heightmap2wrl.c
+	gcc -std=c99 -o heightmap2wrl heightmap2wrl.c -lmingw32 -lSDLmain -lSDL
 
 FRC:

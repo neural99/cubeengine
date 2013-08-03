@@ -13,9 +13,9 @@ static int user_pressed_quit;
 static event_handler_t *quit_handler;
 static tile_t *cross_tile;
 static Uint32 last_fps = 0;
-static chunk_t *chunk1, *chunk2;
 
 void load_hud(void);
+void load_world(void);
 
 void
 init_graphics(void){
@@ -96,10 +96,8 @@ draw_hud(void){
 	snprintf(buff, 100, "%u", last_fps);
 	hud_draw_string(5, 565, 24, 32, buff);
 
-	int trigs = chunk1->mesh->n_trigs + chunk2->mesh->n_trigs;
-	int verts = chunk1->mesh->n_verticies + chunk2->mesh->n_verticies;
 	memset(buff, 0, 100);
-	snprintf(buff, 100, "trigs:%d vert:%d", trigs, verts);
+	snprintf(buff, 100, "chunks:%d blocks:%d", chunkmanager_nchunks(), chunkmanager_activeblocks());
 	hud_draw_string(5, 550, 12, 16, buff);
 }
 
@@ -120,9 +118,10 @@ draw_frame(void){
 		for(int j = 0; j < 8; j++)
 			for(int k = 0; k < 8; k++)
 				renderblock(i,j,k);
-	*/
 	chunk_render(chunk1);
 	chunk_render(chunk2);
+	*/
+	chunkmanager_render_world();
 
 	draw_hud();
 }
@@ -154,10 +153,7 @@ game_loop(void){
 	event_init();
 	setup_event_handlers();
 	init_graphics();
-
-	chunk1 = chunk_create();
-	chunk2 = chunk_create();
-	chunk2->pos[0] = 17;
+	load_world();
 
 	Uint32 prev_ticks, curr_ticks;
 	curr_ticks = SDL_GetTicks();
@@ -173,10 +169,21 @@ game_loop(void){
 		do_logic(curr_ticks - prev_ticks);
 	}
 
+	chunkmanager_free();
 	cleanup_graphics();
 	cleanup_event_handlers();
 	hud_cleanup();
 	event_cleanup();
+}
+
+void
+load_world(void){
+	world_file_t world;
+	world.path = "test.wrl";
+	if(world_open(&world) < 0)
+		FATAL_ERROR("Couldnt open world file");
+	chunkmanager_init(&world);
+	chunkmanager_rebuild();
 }
 
 int

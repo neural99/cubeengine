@@ -44,15 +44,15 @@ main(int argc, char *argv[]){
 
 	/* Size */
 	Uint32 size[3];
-	size[0] = image->w / CHUNK_SIZE;
-	size[1] = 256 / CHUNK_SIZE;
-	size[2] = image->h / CHUNK_SIZE;
+	size[0] = image->w;
+	size[1] = 256;
+	size[2] = image->h;
 	printf("%d %d %d\n", size[0], size[1], size[2]);
 	fwrite(&size, sizeof(Uint32), 3, out);
 
-	for(int i = 0; i < size[0]; i++)
-		for(int j = 0; j < size[1]; j++)
-			for(int k = 0; k < size[2]; k++)
+	for(int i = 0; i < size[0] / CHUNK_SIZE; i++)
+		for(int j = 0; j < size[1] / CHUNK_SIZE; j++)
+			for(int k = 0; k < size[2] / CHUNK_SIZE; k++)
 				write_chunk(i, j, k, image, out);
 
 
@@ -68,7 +68,8 @@ write_chunk(int x, int y, int z, SDL_Surface *image, FILE *out){
 					    (z * CHUNK_SIZE + k) * image->w; 
 				Uint8 *height_value = image->pixels + offset;
 				Uint32 block = 0;
-				if(j < *height_value){
+				//printf("a = %d b = %d c = %d\n", y * CHUNK_SIZE +j, *height_value, y * CHUNK_SIZE +j < *height_value);
+				if(y * CHUNK_SIZE + j < *height_value){
 					block = 0x80000000;
 				}
 				fwrite(&block, sizeof(Uint32), 1, out);

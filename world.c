@@ -8,6 +8,12 @@
 #define BLOCK_HEIGHT 1.0f
 #define BLOCK_WIDTH 1.0f
 
+typedef struct chunkmanager_s {
+	linked_list_t *render_chunks;
+} chunkmanager_t;
+
+static chunkmanager_t *chunkmanager = NULL;
+
 void
 renderblock(int x, int y, int z){
 	glMatrixMode(GL_MODELVIEW);
@@ -108,8 +114,10 @@ chunk_build_mesh(chunk_t *chunk){
 	for(int i = 0; i < CHUNK_SIZE; i++)
 		for(int j = 0; j < CHUNK_SIZE; j++)
 			for(int k = 0; k < CHUNK_SIZE; k++)
-				if(block_isactive(chunk->blocks[i][j][k]))
+				if(block_isactive(chunk->blocks[i][j][k])){
+					chunk->active_blocks++;
 					add_block_to_mesh(i, j, k, chunk->mesh);
+				}
 			
 }
 
@@ -119,13 +127,9 @@ chunk_rebuild(chunk_t *chunk){
 		mesh_free(chunk->mesh);
 		chunk->mesh = mesh_create();
 	}
+	chunk->active_blocks = 0;
 	chunk_build_mesh(chunk);
 	mesh_rebuild(chunk->mesh);
-}
-
-void
-chuck_render(chunk_t *chunk){
-	mesh_render(chunk->mesh);
 }
 
 mesh_t*
@@ -141,7 +145,8 @@ mesh_create(void){
 }
 
 void
-mesh_free(mesh_t *m){
+mesh_free(void *p){
+	mesh_t *m = p;
 	if(m->elementId != 0)
 		glDeleteBuffers(1, &m->elementId);
 	if(m->vertexId != 0)
@@ -263,6 +268,7 @@ mesh_rebuild(mesh_t *m){
 
 void 
 mesh_render(mesh_t *m){
+	//printf("mesh render, vertexId=%d, elementId=%d\n", m->vertexId, m->elementId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
 	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, NULL);
 	glEnableVertexAttribArray(0);
@@ -279,6 +285,7 @@ mesh_render(mesh_t *m){
 
 void
 chunk_render(chunk_t *c){
+	//printf("chunk_render. pos =(%f %f %f)\n", c->pos[0], c->pos[1], c->pos[2]);
 	glPushMatrix();
 	glTranslated(c->pos[0], c->pos[1], c->pos[2]);
 	mesh_render(c->mesh);
@@ -289,21 +296,17 @@ chunk_t*
 chunk_create(void){
 	chunk_t *tmp = malloc(sizeof(chunk_t));
 	tmp->pos[0] = 0; tmp->pos[1] = 0; tmp->pos[2] = 0;
-	for(int i = 0; i < CHUNK_SIZE; i++)
-		for(int j = 0; j < CHUNK_SIZE; j++)
-			for(int k = 0; k < CHUNK_SIZE; k++)
-				tmp->blocks[i][j][k] = 0x80000000;
-
-	//tmp->blocks[0][0][0] = 0x80000000;
+	memset(tmp->blocks, 0, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Uint32));
 	tmp->mesh = mesh_create();
 	tmp->modified = 0;
 	tmp->modified_list = util_list_create();
-	chunk_rebuild(tmp);
+	tmp->active_blocks = 0;
 	return tmp;
 }
 
 void
-chunk_free(chunk_t *chunk){
+chunk_free(void *p){
+	chunk_t *chunk = p;
 	mesh_free(chunk->mesh);
 	util_list_free_data(chunk->modified_list);
 	free(chunk);
@@ -347,11 +350,11 @@ world_open(world_file_t *f){
 		LOG_DEBUG("Aborting. World length must be multiple of CHUNK_SIZE=%d", CHUNK_SIZE);
 		return -1;
 	}
-	if(f->size[1] & CHUNK_SIZE != 0){
+	if((f->size[1] % CHUNK_SIZE) != 0){
 		LOG_DEBUG("Aborting. World height must be multiple of CHUNK_SIZE=%d", CHUNK_SIZE);
 		return -1;
 	}
-	if(f->size[2] & CHUNK_SIZE != 0){
+	if((f->size[2] % CHUNK_SIZE) != 0){
 		LOG_DEBUG("Aborting. World width must be multiple of CHUNK_SIZE=%d", CHUNK_SIZE);
 		return -1;
 	}
@@ -359,23 +362,29 @@ world_open(world_file_t *f){
 	return 0;
 }
 
-
 int
 world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
-	int chunk_ind = x + y * f->size[0] + z * f->size[0] * f->size[1];
-	int byte_offset = (4 + chunk_ind * CHUNK_SIZE) * sizeof(Uint32);
+	int chunk_linear_size = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+	int chunk_ind = z + y * f->size[2] / CHUNK_SIZE + x * f->size[2] / CHUNK_SIZE * f->size[1] / CHUNK_SIZE;
+	int byte_offset = (4 + chunk_ind * chunk_linear_size) * sizeof(Uint32);
 	if(fseek(f->file, byte_offset, SEEK_SET) < 0){
 		LOG_DEBUG("Couldnt seek to read chunk (%d %d %d)", x, y, z);
 		return -1;
 	}
 
-	int count = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-	int r = fread(c->blocks, sizeof(Uint32), count, f->file); 	
-	if(r != count){
+	int r = fread(c->blocks, sizeof(Uint32), chunk_linear_size, f->file); 	
+	if(r != chunk_linear_size){
 		LOG_DEBUG("Could not read chunk (%d %d %d)", x, y, z);
 		return -1;
 	}
+	int active = 0;
+	for(int i = 0; i < CHUNK_SIZE; i++)
+		for(int j = 0; j < CHUNK_SIZE; j++)
+			for(int k = 0; k < CHUNK_SIZE; k++)
+				if(block_isactive(c->blocks[i][j][k]))
+					active++;
 
+	printf("%d\n", active);
 	c->pos[0] = x * (CHUNK_SIZE + 1);
 	c->pos[1] = y * (CHUNK_SIZE + 1);
 	c->pos[2] = z * (CHUNK_SIZE + 1);
@@ -383,3 +392,66 @@ world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
 	return 0;
 }
 
+void
+chunkmanager_init(world_file_t *world){
+	chunkmanager = malloc(sizeof(chunkmanager_t));
+	chunkmanager->render_chunks = util_list_create();
+	
+	for(int i = 0; i < (int)world->size[0] / CHUNK_SIZE; i++)
+		for(int j = 0; j < (int)world->size[1] / CHUNK_SIZE; j++)
+			for(int k = 0; k < (int)world->size[2] / CHUNK_SIZE; k++){
+				chunk_t *c = chunk_create();
+				world_read_chunk(world, i, j, k, c);
+				util_list_add(chunkmanager->render_chunks, c);
+			}
+}
+
+void
+chunkmanager_rebuild(void){
+	linked_list_elm_t *elm;
+
+	elm = chunkmanager->render_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
+		chunk_rebuild(c);
+		elm = elm->next;
+	}
+}	
+
+void
+chunkmanager_render_world(void){
+	linked_list_elm_t *elm;
+
+	elm = chunkmanager->render_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
+		chunk_render(c);
+		elm = elm->next;
+	}
+}
+
+void
+chunkmanager_free(void){
+	util_list_free_custom(chunkmanager->render_chunks, chunk_free);
+	free(chunkmanager);
+}
+
+int
+chunkmanager_nchunks(void){
+	return util_list_size(chunkmanager->render_chunks);
+}
+
+int 
+chunkmanager_activeblocks(void){
+	linked_list_elm_t *elm;
+	int total = 0;
+
+	elm = chunkmanager->render_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
+		total += c->active_blocks;
+		elm = elm->next;
+	}
+
+	return total;
+}
