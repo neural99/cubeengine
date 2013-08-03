@@ -10,6 +10,9 @@
 
 typedef struct chunkmanager_s {
 	linked_list_t *render_chunks;
+
+	int active_blocks;
+	int n_trigs;
 } chunkmanager_t;
 
 static chunkmanager_t *chunkmanager = NULL;
@@ -63,7 +66,9 @@ renderblock(int x, int y, int z){
 }	
 
 void
-add_block_to_mesh(int x, int y, int z, mesh_t *mesh){
+add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
+	mesh_t *mesh = chunk->mesh;
+	
 	float p1[3] = { x - 1.0, y - 1.0, z + 1.0 };		
 	float p2[3] = { x + 1.0, y - 1.0, z + 1.0};
 	float p3[3] = { x + 1.0, y + 1.0, z + 1.0};
@@ -84,28 +89,46 @@ add_block_to_mesh(int x, int y, int z, mesh_t *mesh){
 	int i8 = mesh_add_vertex(mesh, p8);
 
 	/* Front */
-	mesh_add_trig(mesh, i1, i2, i3);
-	mesh_add_trig(mesh, i1, i3, i4);
+	int is_front_obscured = z + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x][y][z+1]);
+	if(!is_front_obscured){
+		mesh_add_trig(mesh, i1, i2, i3);
+		mesh_add_trig(mesh, i1, i3, i4);
+	}
 
 	/* Back */
-	mesh_add_trig(mesh, i5, i6, i7);
-	mesh_add_trig(mesh, i5, i7, i8);
+	int is_back_obscured = z - 1 > 0 && block_isactive(chunk->blocks[x][y][z-1]);
+	if(!is_back_obscured){
+		mesh_add_trig(mesh, i5, i6, i7);
+		mesh_add_trig(mesh, i5, i7, i8);
+	}
 
 	/* Top */
-	mesh_add_trig(mesh, i4, i3, i8);
-	mesh_add_trig(mesh, i4, i8, i7);
+	int is_top_obscured = y + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x][y+1][z]);
+	if(!is_top_obscured){
+		mesh_add_trig(mesh, i4, i3, i8);
+		mesh_add_trig(mesh, i4, i8, i7);
+	}
 
 	/* Bottom */
-	mesh_add_trig(mesh, i6, i5, i2);
-	mesh_add_trig(mesh, i6, i2, i1);
+	int is_bottom_obscured = y - 1 > 0 && block_isactive(chunk->blocks[x][y-1][z]);
+	if(!is_bottom_obscured){
+		mesh_add_trig(mesh, i6, i5, i2);
+		mesh_add_trig(mesh, i6, i2, i1);
+	}
 
 	/* Left */
-	mesh_add_trig(mesh, i6, i1, i4);
-	mesh_add_trig(mesh, i6, i4, i7);
+	int is_left_obscured = x - 1 > 0 && block_isactive(chunk->blocks[x-1][y][z]);
+	if(!is_left_obscured){
+		mesh_add_trig(mesh, i6, i1, i4);
+		mesh_add_trig(mesh, i6, i4, i7);
+	}
 
 	/* Right */
-	mesh_add_trig(mesh, i2, i5, i8);
-	mesh_add_trig(mesh, i2, i8, i3);
+	int is_right_obscured = x + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x+1][y][z]);
+	if(!is_right_obscured){
+		mesh_add_trig(mesh, i2, i5, i8);
+		mesh_add_trig(mesh, i2, i8, i3);
+	}
 }
 
 
@@ -116,7 +139,7 @@ chunk_build_mesh(chunk_t *chunk){
 			for(int k = 0; k < CHUNK_SIZE; k++)
 				if(block_isactive(chunk->blocks[i][j][k])){
 					chunk->active_blocks++;
-					add_block_to_mesh(i, j, k, chunk->mesh);
+					add_block_to_mesh(i, j, k, chunk);
 				}
 			
 }
@@ -396,6 +419,8 @@ void
 chunkmanager_init(world_file_t *world){
 	chunkmanager = malloc(sizeof(chunkmanager_t));
 	chunkmanager->render_chunks = util_list_create();
+	chunkmanager->active_blocks = 0;
+	chunkmanager->n_trigs = 0;
 	
 	for(int i = 0; i < (int)world->size[0] / CHUNK_SIZE; i++)
 		for(int j = 0; j < (int)world->size[1] / CHUNK_SIZE; j++)
@@ -414,6 +439,8 @@ chunkmanager_rebuild(void){
 	while(elm != NULL){
 		chunk_t *c = elm->data;
 		chunk_rebuild(c);
+		chunkmanager->active_blocks += c->active_blocks;
+		chunkmanager->n_trigs += c->mesh->n_trigs;
 		elm = elm->next;
 	}
 }	
@@ -443,15 +470,10 @@ chunkmanager_nchunks(void){
 
 int 
 chunkmanager_activeblocks(void){
-	linked_list_elm_t *elm;
-	int total = 0;
+	return chunkmanager->active_blocks;
+}
 
-	elm = chunkmanager->render_chunks->head;
-	while(elm != NULL){
-		chunk_t *c = elm->data;
-		total += c->active_blocks;
-		elm = elm->next;
-	}
-
-	return total;
+int 
+chunkmanager_ntrigs(void){
+	return chunkmanager->n_trigs;
 }

@@ -67,6 +67,7 @@ void chunkmanager_render_world(void);
 void chunkmanager_free(void);
 int chunkmanager_nchunks(void);
 int chunkmanager_activeblocks(void);
+int chunkmanager_ntrigs(void);
 
 void renderblock(int x, int y, int z);
 
