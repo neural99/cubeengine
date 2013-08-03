@@ -13,7 +13,7 @@ static int user_pressed_quit;
 static event_handler_t *quit_handler;
 static tile_t *cross_tile;
 static Uint32 last_fps = 0;
-static chunk_t *chunk;
+static chunk_t *chunk1, *chunk2;
 
 void load_hud(void);
 
@@ -96,8 +96,10 @@ draw_hud(void){
 	snprintf(buff, 100, "%u", last_fps);
 	hud_draw_string(5, 565, 24, 32, buff);
 
+	int trigs = chunk1->mesh->n_trigs + chunk2->mesh->n_trigs;
+	int verts = chunk1->mesh->n_verticies + chunk2->mesh->n_verticies;
 	memset(buff, 0, 100);
-	snprintf(buff, 100, "trigs:%d vert:%d", chunk->mesh->n_trigs, chunk->mesh->n_verticies);
+	snprintf(buff, 100, "trigs:%d vert:%d", trigs, verts);
 	hud_draw_string(5, 550, 12, 16, buff);
 }
 
@@ -119,7 +121,8 @@ draw_frame(void){
 			for(int k = 0; k < 8; k++)
 				renderblock(i,j,k);
 	*/
-	chunk_render(chunk);
+	chunk_render(chunk1);
+	chunk_render(chunk2);
 
 	draw_hud();
 }
@@ -152,7 +155,9 @@ game_loop(void){
 	setup_event_handlers();
 	init_graphics();
 
-	chunk = chunk_create();
+	chunk1 = chunk_create();
+	chunk2 = chunk_create();
+	chunk2->pos[0] = 17;
 
 	Uint32 prev_ticks, curr_ticks;
 	curr_ticks = SDL_GetTicks();

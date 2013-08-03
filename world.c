@@ -115,6 +115,10 @@ chunk_build_mesh(chunk_t *chunk){
 
 void
 chunk_rebuild(chunk_t *chunk){
+	if(chunk->mesh->n_trigs != 0){
+		mesh_free(chunk->mesh);
+		chunk->mesh = mesh_create();
+	}
 	chunk_build_mesh(chunk);
 	mesh_rebuild(chunk->mesh);
 }
@@ -138,6 +142,10 @@ mesh_create(void){
 
 void
 mesh_free(mesh_t *m){
+	if(m->elementId != 0)
+		glDeleteBuffers(1, &m->elementId);
+	if(m->vertexId != 0)
+		glDeleteBuffers(1, &m->vertexId);
 	util_list_free_data(m->vertex_list);
 	util_list_free_data(m->trig_list);
 	free(m);
@@ -234,7 +242,7 @@ mesh_rebuild(mesh_t *m){
 	if(vertex_data == NULL)
 		FATAL_ERROR("Out of memory");
 	copy_vertex_data(vertex_data, m);
-	print_vertex_data(vertex_data, m->n_verticies);
+	//print_vertex_data(vertex_data, m->n_verticies);
 	glGenBuffers(1, &m->vertexId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
 	glBufferData(GL_ARRAY_BUFFER, size, vertex_data, GL_STATIC_DRAW);
@@ -246,7 +254,7 @@ mesh_rebuild(mesh_t *m){
 	if(index_data == NULL)
 		FATAL_ERROR("Out of memory");
 	copy_index_data(index_data, m);
-	print_index_data(index_data, m->n_trigs);
+	//print_index_data(index_data, m->n_trigs);
 	glGenBuffers(1, &m->elementId);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index_data, GL_STATIC_DRAW);
@@ -271,7 +279,10 @@ mesh_render(mesh_t *m){
 
 void
 chunk_render(chunk_t *c){
+	glPushMatrix();
+	glTranslated(c->pos[0], c->pos[1], c->pos[2]);
 	mesh_render(c->mesh);
+	glPopMatrix();
 }
 
 chunk_t*
@@ -285,14 +296,90 @@ chunk_create(void){
 
 	//tmp->blocks[0][0][0] = 0x80000000;
 	tmp->mesh = mesh_create();
-
+	tmp->modified = 0;
+	tmp->modified_list = util_list_create();
 	chunk_rebuild(tmp);
-
 	return tmp;
 }
 
 void
 chunk_free(chunk_t *chunk){
 	mesh_free(chunk->mesh);
+	util_list_free_data(chunk->modified_list);
 	free(chunk);
 }
+
+void 
+chunk_add_modifid_block(chunk_t *c, int x, int y, int z){
+	if(!c->modified) c->modified = 1;
+	int *block_ind = malloc(sizeof(int) * 3);
+	block_ind[0] = x;
+	block_ind[1] = y;
+	block_ind[2] = z;
+	util_list_add(c->modified_list, block_ind);
+}
+
+int 
+world_open(world_file_t *f){
+	f->file = fopen(f->path, "r+");
+	if(f->file == NULL){
+		LOG_DEBUG("Could not open file %s", f->path);
+		return -1;
+	}
+	Uint32 first;
+	int r = fread(&first, sizeof(Uint32), 1, f->file);
+	if(r != 1){
+		LOG_DEBUG("Could not read magic number from file %s", f->path);
+		return -1;
+	}
+	if(first != WORLD_FILE_MAGIC_NUMBER){
+		LOG_DEBUG("File %s doesn't have correct magic number. Is it a world file?", f->path);
+		return -1;
+	}
+	
+	/* We probably have a world file. Read the world size */
+	r = fread(&f->size, sizeof(Uint32), 3, f->file);
+	if(r != 3){
+		LOG_DEBUG("Could not read world size from file %s", f->path);
+		return -1;
+	}
+	if(f->size[0] % CHUNK_SIZE != 0){
+		LOG_DEBUG("Aborting. World length must be multiple of CHUNK_SIZE=%d", CHUNK_SIZE);
+		return -1;
+	}
+	if(f->size[1] & CHUNK_SIZE != 0){
+		LOG_DEBUG("Aborting. World height must be multiple of CHUNK_SIZE=%d", CHUNK_SIZE);
+		return -1;
+	}
+	if(f->size[2] & CHUNK_SIZE != 0){
+		LOG_DEBUG("Aborting. World width must be multiple of CHUNK_SIZE=%d", CHUNK_SIZE);
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int
+world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
+	int chunk_ind = x + y * f->size[0] + z * f->size[0] * f->size[1];
+	int byte_offset = (4 + chunk_ind * CHUNK_SIZE) * sizeof(Uint32);
+	if(fseek(f->file, byte_offset, SEEK_SET) < 0){
+		LOG_DEBUG("Couldnt seek to read chunk (%d %d %d)", x, y, z);
+		return -1;
+	}
+
+	int count = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+	int r = fread(c->blocks, sizeof(Uint32), count, f->file); 	
+	if(r != count){
+		LOG_DEBUG("Could not read chunk (%d %d %d)", x, y, z);
+		return -1;
+	}
+
+	c->pos[0] = x * (CHUNK_SIZE + 1);
+	c->pos[1] = y * (CHUNK_SIZE + 1);
+	c->pos[2] = z * (CHUNK_SIZE + 1);
+
+	return 0;
+}
+

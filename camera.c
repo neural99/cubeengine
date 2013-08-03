@@ -93,7 +93,6 @@ camera_load_perspective(void){
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	double aspect = WINDOW_WIDTH / WINDOW_HEIGHT;
-	glOrtho(-aspect, aspect, -1, 1, -1, 1);
 	gluPerspective(60.0, aspect, 0.01, 10000.0);
 	
 	glMatrixMode(GL_MODELVIEW);
@@ -115,7 +114,7 @@ handle_wireframe_key(SDL_Event *e){
 
 static int 
 handle_keypress(SDL_Event *e){
-	printf("eye = (%f %f %f), forward= (%f %f %f %f), up = (%f %f %f %f)\n", camera->eye[0], camera->eye[1], camera->eye[2],
+	LOG_DEBUG("eye = (%f %f %f), forward= (%f %f %f %f), up = (%f %f %f %f)\n", camera->eye[0], camera->eye[1], camera->eye[2],
 		       				     camera->forward.x, camera->forward.y, camera->forward.z, camera->forward.w,
 					     	   camera->up.x, camera->up.y, camera->up.z, camera->up.w);
 	SDLKey sym = e->key.keysym.sym;

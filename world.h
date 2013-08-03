@@ -28,16 +28,37 @@ void mesh_render(mesh_t *m);
 void mesh_free(mesh_t *m);
 
 typedef struct chunk_s {
-	/* Position of origo */
+	/* Position of origo in world coordinates */
 	double pos[3]; 
 	block_t blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	mesh_t *mesh;
+	int modified;
+	linked_list_t *modified_list;					
 } chunk_t;
 
 chunk_t* chunk_create(void);
 void chunk_rebuild(chunk_t *chunk);
 void chunk_render(chunk_t *chunk);
 void chunk_free(chunk_t *chunk);
+void chunk_add_modified_block(chunk_t *chunk, int x, int y, int z);
+
+#define WORLD_FILE_MAGIC_NUMBER 274263364
+
+typedef struct world_file_s {
+	/* Input */
+	char *path;
+	/* Output */
+	Uint32 size[3];
+	/* Internal */
+	FILE *file;
+} world_file_t;
+
+int world_open(world_file_t *f);
+int world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *chunk);
+/* Push the modified part of chunk to disk */
+void world_update_chunk(world_file_t *f, chunk_t *chunk);
+/* (Re-)write the entire world file to disk. */
+void world_write_file(world_file_t *f);
 
 void renderblock(int x, int y, int z);
 

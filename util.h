@@ -9,10 +9,12 @@
 #define WINDOW_HEIGHT 600
 
 /* Logging */
-#define FATAL_ERROR(str) (util_fatalerror(__FILE__,__LINE__,str))
+#define FATAL_ERROR(...) (util_fatalerror(__FILE__,__LINE__,__VA_ARGS__))
+#define LOG_DEBUG(...) (util_log_debug(__FILE__, __LINE__, __VA_ARGS__))
 
-void util_fatalerror(char *file, int line, char *msg);
-void util_log_error(char *file, int line, char *msg);
+void util_fatalerror(char *file, int line, char *fmt, ...);
+void util_log_error(char *file, int line, char *fmt, ...);
+void util_log_debug(char *file, int line, char *fmt, ...);
 
 /* Linked list */
 struct linked_list_s;

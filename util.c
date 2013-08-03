@@ -6,14 +6,36 @@
 static linked_list_t *animation_list = NULL;
 
 void
-util_fatalerror(char *file, int line, char *msg){
-	util_log_error(file, line, msg);
+util_fatalerror(char *file, int line, char *fmt, ...){
+	va_list va;
+	va_start(va, fmt);
+	char buff2[500];
+	vsprintf(buff2, fmt, va);
+	printf("Error(%s:%d): %s\n", file, line, buff2);
+	va_end(va);
 	exit(1);
 }
 
 void
-util_log_error(char *file, int line, char *msg){
-	printf("%s line %d: %s\n", file, line, msg);
+util_log_error(char *file, int line, char *fmt, ...){
+	va_list va;
+	va_start(va, fmt);
+	char buff2[500];
+	vsprintf(buff2, fmt, va);
+	printf("Error(%s:%d): %s\n", file, line, buff2);
+	va_end(va);
+}
+
+void
+util_log_debug(char *file, int line, char *fmt, ...){
+	va_list va;
+	va_start(va, fmt);
+	char buff2[500];
+	vsprintf(buff2, fmt, va);
+#ifdef DEBUG
+	printf("Debug(%s:%d): %s\n", file, line, buff2);
+#endif
+	va_end(va);
 }
 
 linked_list_t*
