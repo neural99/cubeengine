@@ -203,7 +203,7 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	    glTexCoord2f(0, 0); glVertex3f(x, y + height, 0);
 	glEnd();
 	glEnable(GL_CULL_FACE);
-	glEnable(GL_LIGHTING);
+	//glEnable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
 	glDepthMask(GL_TRUE);
 	if(polymode == GL_LINE)

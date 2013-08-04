@@ -2,6 +2,7 @@
 #define __WORLD_H__
 
 #include <SDL/sdl.h>
+#include <GL/glee.h>
 
 #include "util.h"
 
@@ -73,9 +74,16 @@ typedef struct skybox_s {
 	GLuint textureId;
 } skybox_t;
 
-skybox_t *skybox_create(char *texture_dir);
+skybox_t *skybox_create(void);
 void skybox_render(skybox_t *sb);
 
+/* Block texture set */
+void textureset_init(void);
+GLuint textureset_current_atlas(void);
+void textureset_free(void);
+GLfloat* textureset_texcoords(Uint32 block_type, int face, int vert);
+
+/* Misc utility */
 void renderblock(int x, int y, int z);
 void renderblock_with_textures(int x, int y, int z, GLuint cubemap);
 

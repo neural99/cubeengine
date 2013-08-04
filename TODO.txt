@@ -1,4 +1,6 @@
-+ fix skybox
 + texture on boxes
-+ fix lightning
++ box picker
++ enable modification
 + more optimizing
++ fps camera / collision
++ lightning

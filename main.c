@@ -1,5 +1,5 @@
 #include <SDL/sdl.h>
-#include <GL/gl.h>
+#include <GL/glee.h>
 #include <stdio.h>
 
 #include "hud.h"
@@ -17,6 +17,81 @@ static skybox_t *skybox;
 
 void load_hud(void);
 void load_world(void);
+
+void
+show_info_log(GLuint object, GLEEPFNGLGETSHADERIVPROC glGet__iv, GLEEPFNGLGETPROGRAMINFOLOGPROC glGet__InfoLog){
+    GLint log_length;
+    char *log;
+
+    glGet__iv(object, GL_INFO_LOG_LENGTH, &log_length);
+    log = malloc(log_length);
+    glGet__InfoLog(object, log_length, NULL, log);
+    fprintf(stderr, "%s", log);
+    free(log);
+}
+
+char*
+file_contents(char *filename){
+	FILE *f = fopen(filename, "r");
+	if(f == NULL)
+		FATAL_ERROR("Could not open file %s", filename);
+	char *buff;
+	buff = malloc(2048);
+	memset(buff, 0, 2048);
+	fread(buff, 1, 2048, f);
+	return buff;
+}
+
+GLuint
+make_shader(GLenum type, char *filename){
+    GLchar *source = file_contents(filename);
+    GLuint shader;
+    GLint shader_ok;
+
+    if (!source)
+        return 0;
+    shader = glCreateShader(type);
+    glShaderSource(shader, 1, (const GLchar**)&source, NULL);
+    free(source);
+    glCompileShader(shader);
+
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &shader_ok);
+    if (!shader_ok) {
+        fprintf(stderr, "Failed to compile %s:\n", filename);
+        show_info_log(shader, glGetShaderiv, glGetShaderInfoLog);
+        glDeleteShader(shader);
+        return 0;
+    }
+    return shader;
+}
+	    
+GLuint
+make_program(GLuint vertex_shader, GLuint fragment_shader){
+    GLint program_ok;
+
+    GLuint program = glCreateProgram();
+    glAttachShader(program, vertex_shader);
+    glAttachShader(program, fragment_shader);
+    glLinkProgram(program);
+
+    glGetProgramiv(program, GL_LINK_STATUS, &program_ok);
+    if (!program_ok) {
+        fprintf(stderr, "Failed to link shader program:\n");
+        show_info_log(program, glGetProgramiv, glGetProgramInfoLog);
+        glDeleteProgram(program);
+        return 0;
+    }
+    return program;
+}
+    
+
+void
+setup_phong(void){
+	GLuint frag = make_shader(GL_FRAGMENT_SHADER, "frag.glsl");
+	GLuint vert = make_shader(GL_VERTEX_SHADER, "vert.glsl");
+	GLuint program = make_program(vert, frag);
+	printf("program=%d\n", program);
+}
 
 void
 init_graphics(void){
@@ -44,14 +119,15 @@ init_graphics(void){
 	
 	/* Enable light 0 */
 	float diffuse_light[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-	float specular_light[] = { 0.6f, 0.6f, 0.6f, 1.0f };
 	float position_light[] = { 0.0f, -1.0f, 0.0f, 0.0f };
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light);
 	//glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light);
 	glLightfv(GL_LIGHT0, GL_POSITION, position_light);
-	glEnable(GL_LIGHT0);
+	//glEnable(GL_LIGHT0);
 
-	glEnable(GL_LIGHTING);
+	//setup_phong();
+
+	//glEnable(GL_LIGHTING);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -62,7 +138,7 @@ init_graphics(void){
 	camera_create();
 	camera_move(0, 0, -10);
 
-	skybox = skybox_create("skybox");
+	skybox = skybox_create();
 }
 
 void
@@ -180,6 +256,7 @@ game_loop(void){
 	event_init();
 	setup_event_handlers();
 	init_graphics();
+	textureset_init();
 	load_world();
 
 	Uint32 prev_ticks, curr_ticks;
@@ -200,6 +277,7 @@ game_loop(void){
 	cleanup_graphics();
 	cleanup_event_handlers();
 	hud_cleanup();
+	textureset_free();
 	event_cleanup();
 }
 

@@ -20,6 +20,185 @@ typedef struct chunkmanager_s {
 
 static chunkmanager_t *chunkmanager = NULL;
 
+/* TODO: Read this from settings file */
+static char *textureset_atlas_path = "block_textures.bmp";
+static int textureset_size = 32;
+static char *textureset_mapping_path = "block_texture_mappings.txt";
+
+typedef struct block_type_textures_s {
+	Uint32 block_type;
+	Uint32 texture_indicies[6];
+} block_type_textures_t;
+
+typedef struct textureset_s {
+	GLuint textureId;
+	int atlas_w;
+	int atlas_h;
+	int n_subtextures;
+	int n_w, n_h;
+	linked_list_t *block_type_mappings;
+} textureset_t;
+
+static textureset_t textureset_current;
+
+static block_type_textures_t*
+get_block_type_textures(Uint32 block_type){
+	linked_list_elm_t *elm;
+
+	elm = textureset_current.block_type_mappings->head;
+	while(elm != NULL){
+		block_type_textures_t *btt = elm->data;	
+		if(btt->block_type == block_type)
+			return btt;
+		elm = elm->next;
+	}
+	/* Nothing found */
+	return NULL;
+}
+
+static void
+load_block_type_mappings(char *path){
+	FILE *f = fopen(path, "r");
+	if(f == NULL)
+		FATAL_ERROR("Could not load textureset mapping file %s", path);
+	
+	int line = 0;
+	char buff[1024];
+	Uint32 block_type, front, back, top, bottom, left, right;
+	do {
+		fgets(buff, 1024, f);
+
+		int items = scanf(buff, "%d %d %d %d %d %d %d", &block_type, &front, &back,
+								&top, &bottom, &left, &right);
+		if(items =! 7)
+			FATAL_ERROR("Error parsing block type mapping file %s. Error at line %d", path, line);
+
+		/* Add to list */
+		block_type_textures_t *block_tex = malloc(sizeof(block_type_textures_t));
+		block_tex->block_type = block_type;
+		block_tex->texture_indicies[0] = front;
+		block_tex->texture_indicies[1] = back;
+		block_tex->texture_indicies[2] = top;
+		block_tex->texture_indicies[3] = bottom;
+		block_tex->texture_indicies[4] = left; 
+		block_tex->texture_indicies[5] = right; 
+
+		util_list_add(textureset_current.block_type_mappings, block_tex);
+
+		line++;
+	}while(!feof(f));
+}
+
+static void
+textureset_load_texture_atlas(char *path, int size){
+	GLuint textureId;
+
+	SDL_Surface *image = SDL_LoadBMP(path);
+	if(image == NULL)
+		FATAL_ERROR("Could not open texture set %s", path);
+
+	if(image->w % size != 0)
+		FATAL_ERROR("The width of texture set %s  must be a multiple of %d", path, size);
+	if(image->h % size != 0)
+		FATAL_ERROR("The height of texture set %s  must be a multiple of %d", path, size);
+
+	image = SDL_DisplayFormat(image);
+	if(image == NULL)
+		FATAL_ERROR("SDL_DisplayFormat failed. Out of memeroy?");
+
+	textureset_current.atlas_w = image->w;
+	textureset_current.atlas_h = image->h;
+
+	int n_w = image->w / size;
+	int n_h = image->h / size;
+	textureset_current.n_w = n_w;
+	textureset_current.n_h = n_h;
+	textureset_current.n_subtextures = n_w * n_h;
+
+	SDL_Surface *tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, size, size, 32, 
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+					    0x000000FF, 
+					    0x0000FF00, 
+					    0x00FF0000, 
+					    0xFF000000
+#else
+					    0xFF000000,
+					    0x00FF0000, 
+					    0x0000FF00, 
+					    0x000000FF
+#endif
+					);				    
+	Uint32 colorkey = SDL_MapRGB(image->format, 0xFF, 0x00, 0xFF);
+	SDL_SetColorKey(image, SDL_SRCCOLORKEY, colorkey); 
+	SDL_BlitSurface(image, NULL, tmp, NULL);
+
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_2D, textureId);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tmp->w, tmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tmp->pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	SDL_FreeSurface(image);
+
+	textureset_current.textureId = textureId;
+}
+
+
+GLuint
+textureset_current_atlas(void){
+	return textureset_current.textureId;
+}
+
+GLfloat*
+textureset_texcoords(Uint32 block_type, int face, int vert){
+	block_type_textures_t *btt = get_block_type_textures(block_type);
+	if(btt == NULL)
+		FATAL_ERROR("Could not find block type texture mappings for block type = %d. Aborting", block_type);
+	int tex_ind = btt->texture_indicies[face];
+	/* Convert linear index to (x, y) sub texture index */
+	int n_y = tex_ind / textureset_current.n_w;
+	int n_x = tex_ind % textureset_current.n_w;
+	/* Pixel coordinates */
+	int y = n_y * textureset_size;
+	int x = n_x * textureset_size;
+
+	GLfloat *uv = malloc(sizeof(GLfloat) * 2);
+
+	/* Counting CCW from (0,0) */
+	if(vert == 0){
+		uv[0] =  x / textureset_current.atlas_w;
+	        uv[1] =	 y / textureset_current.atlas_h; 
+	}else if(vert == 1){
+		uv[0] =  (x + textureset_size) / textureset_current.atlas_w;
+	        uv[1] =	 y / textureset_current.atlas_h; 
+	}else if(vert == 2){
+		uv[0] =  (x + textureset_size) / textureset_current.atlas_w;
+	        uv[1] =	 (y + textureset_size) / textureset_current.atlas_h; 
+	}else if(vert == 3){
+		uv[0] =  x / textureset_current.atlas_w;
+	        uv[1] =	 (y + textureset_size) / textureset_current.atlas_h; 
+	}else{
+		FATAL_ERROR("Invalid input to function. Should not happend.");
+	}
+
+	return uv;
+}
+
+void
+textureset_init(void){
+	textureset_current.block_type_mappings = util_list_create();
+	load_block_type_mappings(textureset_mapping_path);
+	textureset_load_texture_atlas(textureset_atlas_path, textureset_size); 
+}
+
+void 
+textureset_free(void){
+	util_list_free_data(textureset_current.block_type_mappings);
+	glDeleteTextures(1, &textureset_current.textureId);
+	textureset_current.textureId = 0;
+	textureset_current.n_subtextures = 0;
+}
+
 void
 renderblock(int x, int y, int z){
 	glMatrixMode(GL_MODELVIEW);
@@ -555,12 +734,16 @@ void
 chunkmanager_render_world(void){
 	linked_list_elm_t *elm;
 
+	//glUseProgram(3);
+
 	elm = chunkmanager->render_chunks->head;
 	while(elm != NULL){
 		chunk_t *c = elm->data;
 		chunk_render(c);
 		elm = elm->next;
 	}
+
+	//glUseProgram(0);
 }
 
 void
@@ -640,7 +823,7 @@ load_cubemap(char *dir){
 }
 
 skybox_t*
-skybox_create(char *texture_dir){
+skybox_create(void){
 	skybox_t *sb = malloc(sizeof(skybox_t));
 	sb->textureId = load_cubemap("skybox");
 
