@@ -1,0 +1,4 @@
++ fix skybox
++ texture on boxes
++ fix lightning
++ more optimizing

@@ -77,6 +77,6 @@ skybox_t *skybox_create(char *texture_dir);
 void skybox_render(skybox_t *sb);
 
 void renderblock(int x, int y, int z);
-void renderblock_with_textures(int x, int y, int z, GLuint textures[6]);
+void renderblock_with_textures(int x, int y, int z, GLuint cubemap);
 
 #endif

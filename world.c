@@ -1,6 +1,7 @@
+#include <string.h>
+#include <math.h>
 #include <SDL/sdl.h>
 #include <GL/glee.h>
-#include <string.h>
 
 #include "util.h"
 #include "world.h"
@@ -74,50 +75,51 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 	glTranslatef(x, y, z);
 
 	glDepthMask(GL_FALSE);
-	glEnable(GL_TEXTURE_2D);
+	glEnable(GL_TEXTURE_CUBE_MAP);
 	glDisable(GL_LIGHTING);
 	glDisable(GL_CULL_FACE);
 
-	/* Front */
+	float N = 1.0f / sqrt(3.0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 	glBegin(GL_QUADS);
+		/* Front */
 		//glNormal3f(0.0f, 0.0f, 1.0f);
-		glTexCoord2f(0,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(1,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(-N,-N,N); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,-N,N); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,N,N); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(-N,N,N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
 		/* Back */
 		//glNormal3f(0.0f, 0.0f, -1.0f);
-		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(0,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(1,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(N,-N,-N); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,-N,-N); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,N,-N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(N,N,-N); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
 		/* Top */
 		//glNormal3f(0.0f, 1.0f, 0.0f);
-		glTexCoord2f(0,1); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(1,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,N,-N); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,N,-N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,N,N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,N,N); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
 		/* Bottom */
 		//glNormal3f(0.0f, -1.0f, 0.0f);
-		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(0,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(1,0); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(-N,-N,-N); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,-N,N); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,-N,N); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,-N,-N); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
 		/* Left */
 		//glNormal3f(1.0f, 0.0f, 0.0f);
-		glTexCoord2f(0,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(1,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(0,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,-N,N); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(N,-N,-N); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(N,N,-N); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(N,N,N); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
 		/* Right */
 		//glNormal3f(-1.0f, 0.0f, 0.0f);
-		glTexCoord2f(1,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
-		glTexCoord2f(0,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
-		glTexCoord2f(1,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,-N,-N); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord3f(-N,-N,N); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(-N,N,N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord3f(-N,N,-N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
 	glEnd();
-	glDisable(GL_TEXTURE_2D);
+	glDisable(GL_TEXTURE_CUBE_MAP);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_TRUE);
@@ -511,14 +513,7 @@ world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
 		LOG_DEBUG("Could not read chunk (%d %d %d)", x, y, z);
 		return -1;
 	}
-	int active = 0;
-	for(int i = 0; i < CHUNK_SIZE; i++)
-		for(int j = 0; j < CHUNK_SIZE; j++)
-			for(int k = 0; k < CHUNK_SIZE; k++)
-				if(block_isactive(c->blocks[i][j][k]))
-					active++;
 
-	printf("%d\n", active);
 	c->pos[0] = x * (CHUNK_SIZE + 1);
 	c->pos[1] = y * (CHUNK_SIZE + 1);
 	c->pos[2] = z * (CHUNK_SIZE + 1);
@@ -621,12 +616,14 @@ load_cubemap(char *dir){
 					);				    
 		
 		SDL_BlitSurface(image, NULL, teximgs[i], NULL);
+
+		SDL_FreeSurface(image);
 	}
 
 	glGenTextures(1, &textureId);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, teximgs[0]->w, teximgs[0]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[0]->pixels);
-	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, teximgs[1]->w, teximgs[1]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[1]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, teximgs[1]->w, teximgs[1]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[1]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, teximgs[0]->w, teximgs[0]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[0]->pixels);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, teximgs[2]->w, teximgs[2]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[2]->pixels);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, teximgs[3]->w, teximgs[3]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[3]->pixels);
 	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, teximgs[4]->w, teximgs[4]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[4]->pixels);
@@ -638,7 +635,6 @@ load_cubemap(char *dir){
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	for(int i = 0; i < 6; i++) SDL_FreeSurface(teximgs[i]);
-	SDL_FreeSurface(image);
 
 	return textureId;
 }
