@@ -1,12 +1,14 @@
 #include <SDL/sdl.h>
 #include <GL/glee.h>
+#include <string.h>
 
 #include "util.h"
 #include "world.h"
+#include "camera.h"
 
-#define BLOCK_LENGTH 1.0f
-#define BLOCK_HEIGHT 1.0f
-#define BLOCK_WIDTH 1.0f
+#define BLOCK_LENGTH 500.0f
+#define BLOCK_HEIGHT 500.0f
+#define BLOCK_WIDTH 500.0f
 
 typedef struct chunkmanager_s {
 	linked_list_t *render_chunks;
@@ -66,6 +68,64 @@ renderblock(int x, int y, int z){
 }	
 
 void
+renderblock_with_textures(int x, int y, int z, GLuint texture){
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glTranslatef(x, y, z);
+
+	glDepthMask(GL_FALSE);
+	glEnable(GL_TEXTURE_2D);
+	glDisable(GL_LIGHTING);
+	glDisable(GL_CULL_FACE);
+
+	/* Front */
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	glBegin(GL_QUADS);
+		//glNormal3f(0.0f, 0.0f, 1.0f);
+		glTexCoord2f(0,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(1,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		/* Back */
+		//glNormal3f(0.0f, 0.0f, -1.0f);
+		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(0,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(1,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		/* Top */
+		//glNormal3f(0.0f, 1.0f, 0.0f);
+		glTexCoord2f(0,1); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(1,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		/* Bottom */
+		//glNormal3f(0.0f, -1.0f, 0.0f);
+		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(0,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(1,0); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		/* Left */
+		//glNormal3f(1.0f, 0.0f, 0.0f);
+		glTexCoord2f(0,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(1,1); glVertex3f( BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(1,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(0,0); glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		/* Right */
+		//glNormal3f(-1.0f, 0.0f, 0.0f);
+		glTexCoord2f(1,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT, -BLOCK_WIDTH);
+		glTexCoord2f(0,1); glVertex3f(-BLOCK_LENGTH, -BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(0,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
+		glTexCoord2f(1,0); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_CULL_FACE);
+	glDepthMask(GL_TRUE);
+
+	glPopMatrix();
+}	
+
+void
 add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	mesh_t *mesh = chunk->mesh;
 	
@@ -78,19 +138,27 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	float p6[3] = { x - 1.0, y - 1.0, z - 1.0 };
 	float p7[3] = { x - 1.0, y + 1.0, z - 1.0 };
 	float p8[3] = { x + 1.0, y + 1.0, z - 1.0 };
-	
-	int i1 = mesh_add_vertex(mesh, p1);
-	int i2 = mesh_add_vertex(mesh, p2);
-	int i3 = mesh_add_vertex(mesh, p3);
-	int i4 = mesh_add_vertex(mesh, p4);
-	int i5 = mesh_add_vertex(mesh, p5);
-	int i6 = mesh_add_vertex(mesh, p6);
-	int i7 = mesh_add_vertex(mesh, p7);
-	int i8 = mesh_add_vertex(mesh, p8);
 
+	/* Green color */
+	float c[3] = { 0.0f, 1.0f, 0.0f };
+
+	/* Normals */
+	float n1[3] = { 0.0f, 0.0f, 1.0f };
+	float n2[3] = { 0.0f, 0.0f, -1.0f };
+	float n3[3] = { 0.0f, 1.0f, 0.0f };
+	float n4[3] = { 0.0f, -1.0f, 0.0f };
+	float n5[3] = { -1.0f, 0.0f, 0.0f };
+	float n6[3] = { 1.0f, 0.0f, 0.0f };
+
+	int i1, i2, i3, i4, i5, i6, i7, i8;
+	
 	/* Front */
 	int is_front_obscured = z + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x][y][z+1]);
 	if(!is_front_obscured){
+		i1 = mesh_add_vertex(mesh, p1, c, n1);
+		i2 = mesh_add_vertex(mesh, p2, c, n1);
+		i3 = mesh_add_vertex(mesh, p3, c, n1);
+		i4 = mesh_add_vertex(mesh, p4, c, n1);
 		mesh_add_trig(mesh, i1, i2, i3);
 		mesh_add_trig(mesh, i1, i3, i4);
 	}
@@ -98,6 +166,10 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	/* Back */
 	int is_back_obscured = z - 1 > 0 && block_isactive(chunk->blocks[x][y][z-1]);
 	if(!is_back_obscured){
+		i5 = mesh_add_vertex(mesh, p5, c, n2);
+		i6 = mesh_add_vertex(mesh, p6, c, n2);
+		i7 = mesh_add_vertex(mesh, p7, c, n2);
+		i8 = mesh_add_vertex(mesh, p8, c, n2);
 		mesh_add_trig(mesh, i5, i6, i7);
 		mesh_add_trig(mesh, i5, i7, i8);
 	}
@@ -105,6 +177,10 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	/* Top */
 	int is_top_obscured = y + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x][y+1][z]);
 	if(!is_top_obscured){
+		i3 = mesh_add_vertex(mesh, p3, c, n3);
+		i4 = mesh_add_vertex(mesh, p4, c, n3);
+		i7 = mesh_add_vertex(mesh, p7, c, n3);
+		i8 = mesh_add_vertex(mesh, p8, c, n3);
 		mesh_add_trig(mesh, i4, i3, i8);
 		mesh_add_trig(mesh, i4, i8, i7);
 	}
@@ -112,6 +188,10 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	/* Bottom */
 	int is_bottom_obscured = y - 1 > 0 && block_isactive(chunk->blocks[x][y-1][z]);
 	if(!is_bottom_obscured){
+		i1 = mesh_add_vertex(mesh, p1, c, n4);
+		i2 = mesh_add_vertex(mesh, p2, c, n4);
+		i5 = mesh_add_vertex(mesh, p5, c, n4);
+		i6 = mesh_add_vertex(mesh, p6, c, n4);
 		mesh_add_trig(mesh, i6, i5, i2);
 		mesh_add_trig(mesh, i6, i2, i1);
 	}
@@ -119,6 +199,10 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	/* Left */
 	int is_left_obscured = x - 1 > 0 && block_isactive(chunk->blocks[x-1][y][z]);
 	if(!is_left_obscured){
+		i1 = mesh_add_vertex(mesh, p1, c, n5);
+		i4 = mesh_add_vertex(mesh, p4, c, n5);
+		i6 = mesh_add_vertex(mesh, p6, c, n5);
+		i7 = mesh_add_vertex(mesh, p7, c, n5);
 		mesh_add_trig(mesh, i6, i1, i4);
 		mesh_add_trig(mesh, i6, i4, i7);
 	}
@@ -126,6 +210,10 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	/* Right */
 	int is_right_obscured = x + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x+1][y][z]);
 	if(!is_right_obscured){
+		i2 = mesh_add_vertex(mesh, p2, c, n6);
+		i3 = mesh_add_vertex(mesh, p3, c, n6);
+		i5 = mesh_add_vertex(mesh, p5, c, n6);
+		i8 = mesh_add_vertex(mesh, p8, c, n6);
 		mesh_add_trig(mesh, i2, i5, i8);
 		mesh_add_trig(mesh, i2, i8, i3);
 	}
@@ -180,9 +268,11 @@ mesh_free(void *p){
 }
 
 int
-mesh_add_vertex(mesh_t *m, float v[3]){
-	float *vert = malloc(sizeof(float) * 3);
-	memcpy(vert, v, 3 * sizeof(float));
+mesh_add_vertex(mesh_t *m, float p[3], float c[3], float n[3]){
+	float *vert = malloc(sizeof(float) * 9);
+	memcpy(vert, p, 3 * sizeof(float));
+	memcpy(vert + 3, c, 3 * sizeof(float));
+	memcpy(vert + 6, n, 3 * sizeof(float));
 	util_list_add(m->vertex_list, vert);
 	return m->n_verticies++;
 }
@@ -209,9 +299,20 @@ copy_vertex_data(float *data, mesh_t *m){
 	elm = m->vertex_list->head;
 	while(elm != NULL){
 		float *vert = elm->data;
+		/* Position */
 		*p++ = vert[0];
 		*p++ = vert[1];
 		*p++ = vert[2];
+
+		/* Color */
+		*p++ = vert[3];
+		*p++ = vert[4];
+		*p++ = vert[5];
+
+		/* Normal */
+		*p++ = vert[6];
+		*p++ = vert[7];
+		*p++ = vert[8];
 
 		elm = elm->next;
 	}
@@ -265,7 +366,7 @@ mesh_rebuild(mesh_t *m){
 		glDeleteBuffers(1, &m->vertexId);
 
 	/* Fill vertex buffer */
-	int size = m->n_verticies * 3 * sizeof(float);
+	int size = m->n_verticies * 9 * sizeof(float);
 	float *vertex_data = malloc(size);
 	if(vertex_data == NULL)
 		FATAL_ERROR("Out of memory");
@@ -293,8 +394,15 @@ void
 mesh_render(mesh_t *m){
 	//printf("mesh render, vertexId=%d, elementId=%d\n", m->vertexId, m->elementId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
-	glVertexAttribPointer(0, 3, GL_FLOAT, 0, 0, NULL);
-	glEnableVertexAttribArray(0);
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	glVertexPointer(3, GL_FLOAT, 9 * sizeof(float), NULL);
+
+	glEnableClientState(GL_COLOR_ARRAY);
+	glColorPointer(3, GL_FLOAT, 9 * sizeof(float), (void*) (3 * sizeof(float))); 
+
+	glEnableClientState(GL_NORMAL_ARRAY);
+	glNormalPointer(GL_FLOAT, 9 * sizeof(float), (void*) (6 * sizeof(float)));
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);	
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -304,6 +412,9 @@ mesh_render(mesh_t *m){
 			GL_UNSIGNED_INT,
 			NULL
 		      );
+
+	glDisableClientState(GL_COLOR_ARRAY);
+	glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 void
@@ -476,4 +587,71 @@ chunkmanager_activeblocks(void){
 int 
 chunkmanager_ntrigs(void){
 	return chunkmanager->n_trigs;
+}
+
+static GLuint
+load_cubemap(char *dir){
+	GLuint textureId;
+
+	char *names[6] = {"front.bmp", "back.bmp", "top.bmp", "bottom.bmp", "left.bmp", "right.bmp"};
+	SDL_Surface *teximgs[6];
+
+	for(int i = 0; i < 6; i++){
+		char path[400];
+		strcpy(path, dir);
+		strcat(path, "/");
+		strcat(path, names[i]);
+
+		SDL_Surface *image = SDL_LoadBMP(path);
+		if(image == NULL)
+			FATAL_ERROR("Could not load image %s", path);
+
+		teximgs[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, image->w, image->h, 32, 
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
+					    0x000000FF, 
+					    0x0000FF00, 
+					    0x00FF0000, 
+					    0xFF000000
+#else
+					    0xFF000000,
+					    0x00FF0000, 
+					    0x0000FF00, 
+					    0x000000FF
+#endif
+					);				    
+		
+		SDL_BlitSurface(image, NULL, teximgs[i], NULL);
+	}
+
+	glGenTextures(1, &textureId);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0, GL_RGBA, teximgs[0]->w, teximgs[0]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[0]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0, GL_RGBA, teximgs[1]->w, teximgs[1]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[1]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0, GL_RGBA, teximgs[2]->w, teximgs[2]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[2]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0, GL_RGBA, teximgs[3]->w, teximgs[3]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[3]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0, GL_RGBA, teximgs[4]->w, teximgs[4]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[4]->pixels);
+	glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0, GL_RGBA, teximgs[5]->w, teximgs[5]->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, teximgs[5]->pixels);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	for(int i = 0; i < 6; i++) SDL_FreeSurface(teximgs[i]);
+	SDL_FreeSurface(image);
+
+	return textureId;
+}
+
+skybox_t*
+skybox_create(char *texture_dir){
+	skybox_t *sb = malloc(sizeof(skybox_t));
+	sb->textureId = load_cubemap("skybox");
+
+	return sb;
+}
+
+void
+skybox_render(skybox_t *sb){
+	renderblock_with_textures(camera->eye[0], camera->eye[1], camera->eye[2], sb->textureId);
 }

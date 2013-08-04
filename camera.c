@@ -10,16 +10,10 @@
 
 #define STEP_FACTOR 0.1
 
-typedef struct camera_s {
-	double eye[3];
-
-	quaternion_t forward;
-	quaternion_t up;
-} camera_t;
+camera_t *camera;
 
 SDLKey listen_keys[4] = {SDLK_w, SDLK_s, SDLK_a, SDLK_d};
 
-static camera_t *camera;
 static keypress_handler_t *camera_handlers[4];
 static event_handler_t *camera_mousemove_handler;
 static keypress_handler_t *wireframe_handler;

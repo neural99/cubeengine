@@ -13,6 +13,7 @@ static int user_pressed_quit;
 static event_handler_t *quit_handler;
 static tile_t *cross_tile;
 static Uint32 last_fps = 0;
+static skybox_t *skybox;
 
 void load_hud(void);
 void load_world(void);
@@ -29,6 +30,29 @@ init_graphics(void){
 	SDL_ShowCursor(0);
 	SDL_WM_GrabInput(SDL_GRAB_ON);
 
+	glShadeModel(GL_SMOOTH);
+
+	/* Global ambient light */
+	GLfloat lightColor[] = {0.2f, 0.2f, 0.2f, 1.0f};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lightColor);
+
+	/* Use color to derive material */
+	glEnable(GL_COLOR_MATERIAL);
+	glColorMaterial(GL_FRONT, GL_DIFFUSE);
+	//glColorMaterial(GL_FRONT, GL_SPECULAR);
+	glColorMaterial(GL_FRONT, GL_AMBIENT);
+	
+	/* Enable light 0 */
+	float diffuse_light[] = { 0.3f, 0.3f, 0.3f, 1.0f };
+	float specular_light[] = { 0.6f, 0.6f, 0.6f, 1.0f };
+	float position_light[] = { 0.0f, -1.0f, 0.0f, 0.0f };
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light);
+	//glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light);
+	glLightfv(GL_LIGHT0, GL_POSITION, position_light);
+	glEnable(GL_LIGHT0);
+
+	glEnable(GL_LIGHTING);
+
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
@@ -37,6 +61,8 @@ init_graphics(void){
 
 	camera_create();
 	camera_move(0, 0, -10);
+
+	skybox = skybox_create("skybox");
 }
 
 void
@@ -121,8 +147,9 @@ draw_frame(void){
 	chunk_render(chunk1);
 	chunk_render(chunk2);
 	*/
+	skybox_render(skybox);
 	chunkmanager_render_world();
-
+	//renderblock(0, 0, 5);
 	draw_hud();
 }
 

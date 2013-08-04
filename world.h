@@ -21,7 +21,7 @@ typedef struct mesh_s {
 } mesh_t;
 
 mesh_t* mesh_create(void);
-int mesh_add_vertex(mesh_t *m, float v[3]);
+int mesh_add_vertex(mesh_t *m, float p[3], float c[3], float n[3]);
 void mesh_add_trig(mesh_t *m, GLuint ind1, GLuint ind2, GLuint ind3);
 void mesh_rebuild(mesh_t *m);
 void mesh_render(mesh_t *m);
@@ -69,6 +69,14 @@ int chunkmanager_nchunks(void);
 int chunkmanager_activeblocks(void);
 int chunkmanager_ntrigs(void);
 
+typedef struct skybox_s {
+	GLuint textureId;
+} skybox_t;
+
+skybox_t *skybox_create(char *texture_dir);
+void skybox_render(skybox_t *sb);
+
 void renderblock(int x, int y, int z);
+void renderblock_with_textures(int x, int y, int z, GLuint textures[6]);
 
 #endif
