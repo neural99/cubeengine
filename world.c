@@ -57,22 +57,35 @@ get_block_type_textures(Uint32 block_type){
 }
 
 static void
+print_textureset_mappings(void){
+	linked_list_elm_t * elm;
+	elm = textureset_current.block_type_mappings->head;
+	while(elm != NULL){
+		block_type_textures_t *btt = elm->data;
+		printf("type=%d\n", btt->block_type);
+		elm = elm->next;
+	}
+}
+
+static void
 load_block_type_mappings(char *path){
 	FILE *f = fopen(path, "r");
 	if(f == NULL)
 		FATAL_ERROR("Could not load textureset mapping file %s", path);
-	
+
 	int line = 0;
 	char buff[1024];
 	Uint32 block_type, front, back, top, bottom, left, right;
-	do {
-		fgets(buff, 1024, f);
+	while(!feof(f)){
+		char *r = fgets(buff, 1024, f);
+		if(r == NULL)
+			break;
 
-		int items = scanf(buff, "%d %d %d %d %d %d %d", &block_type, &front, &back,
-								&top, &bottom, &left, &right);
+		int items = sscanf(buff, "%d %d %d %d %d %d %d", (int*)&block_type, (int*)&front, (int*)&back,
+								(int*)&top, (int*)&bottom, (int*)&left, (int*)&right);
 		if(items =! 7)
 			FATAL_ERROR("Error parsing block type mapping file %s. Error at line %d", path, line);
-
+		
 		/* Add to list */
 		block_type_textures_t *block_tex = malloc(sizeof(block_type_textures_t));
 		block_tex->block_type = block_type;
@@ -86,7 +99,7 @@ load_block_type_mappings(char *path){
 		util_list_add(textureset_current.block_type_mappings, block_tex);
 
 		line++;
-	}while(!feof(f));
+	}
 }
 
 static void
@@ -197,6 +210,11 @@ textureset_free(void){
 	glDeleteTextures(1, &textureset_current.textureId);
 	textureset_current.textureId = 0;
 	textureset_current.n_subtextures = 0;
+}
+
+void
+textureset_bind(void){
+	glBindTexture(GL_TEXTURE_2D, textureset_current.textureId);
 }
 
 void

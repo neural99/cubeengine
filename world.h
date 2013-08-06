@@ -82,6 +82,7 @@ void textureset_init(void);
 GLuint textureset_current_atlas(void);
 void textureset_free(void);
 GLfloat* textureset_texcoords(Uint32 block_type, int face, int vert);
+void textureset_bind(void);
 
 /* Misc utility */
 void renderblock(int x, int y, int z);
