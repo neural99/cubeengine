@@ -271,66 +271,24 @@ hud_draw_selection_cross(void){
 	hud_draw_tile(x, y, 33, 33, cross_tile);
 }
 
-static double
-len_from_eye(double v[3]){
-	double tmp[3];
-	tmp[0] = v[0] - camera->eye[0];
-	tmp[1] = v[1] - camera->eye[1];
-	tmp[2] = v[2] - camera->eye[2];
-	return length(tmp);
-}
-
 static int
 get_block_relative_to_chunk(int c_i, double v){
 	long tmp;
-	if(c_i == 0)
-		tmp = lround(v);
-	else
-		tmp = lround(v) % c_i;
-	return (int) tmp;	
+	tmp = lround(v) % (2 * CHUNK_SIZE);
+	return (int) lround((tmp + 0.5) / 2);	
 }
 
-static GLdouble*
-get_near_point(void){
-	GLdouble proj[16];
-	GLdouble modelview[16];
-	GLdouble x, y, z;
-	GLdouble *point;
-	GLint viewport[4];
-
-	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-	glGetDoublev(GL_PROJECTION_MATRIX, proj);
-	glGetIntegerv(GL_VIEWPORT, viewport);
-
-	int res = gluUnProject(800 / 2, 800 / 2, 0, modelview, proj, viewport, &x, &y, &z);
-	if(!res)
-		FATAL_ERROR("gluUnProject returns false");
-	
-	point = malloc(sizeof(GLdouble) * 3);
-	point[0] = x;
-	point[1] = y;
-	point[2] = z;	
-	return point;
-}
 
 static int 
 shoot_ray(int *world_x, int *world_y, int *world_z){
 	double v[3];
-	double dir[3];
 
-	GLdouble *near_point = get_near_point();
-	vec_diff(dir, near_point, camera->eye);
-	free(near_point);
-
-	normalize(dir);
-
-	v[0] = near_point[0];
-	v[1] = near_point[1];
-	v[2] = near_point[2];
-	printf("initial v = %f %f %f len=%f\nforward=%f %f %f %f\n", v[0], v[1], v[2], len_from_eye(v), camera->forward.x, camera->forward.y, camera->forward.z, camera->forward.w);
+	v[0] = camera->eye[0];
+	v[1] = camera->eye[1];
+	v[2] = camera->eye[2];
 	fflush(stdout);
 
-	for(int i = 0; i < 500; i++){
+	for(int i = 0; i < 200; i++){
 		int c_ix = v[0] / (2 * CHUNK_SIZE);
 		int c_iy = v[1] / (2 * CHUNK_SIZE);
 		int c_iz = v[2] / (2 * CHUNK_SIZE);
@@ -353,9 +311,9 @@ shoot_ray(int *world_x, int *world_y, int *world_z){
 		}
 
 		/* Advance */
-		v[0] += 0.1 * dir[0];
-		v[1] += 0.1 * dir[1];
-		v[2] += 0.1 * dir[2];
+		v[0] += 0.1 * camera->forward.x;
+		v[1] += 0.1 * camera->forward.y;
+		v[2] += 0.1 * camera->forward.z;
 	}
 	return 0;
 }

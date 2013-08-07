@@ -87,7 +87,7 @@ camera_load_perspective(void){
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	double aspect = WINDOW_WIDTH / WINDOW_HEIGHT;
-	gluPerspective(60.0, aspect, 0.01, 10000.0);
+	gluPerspective(60.0, aspect, NEAR_PLANE, FAR_PLANE);
 	
 	glMatrixMode(GL_MODELVIEW);
 }
