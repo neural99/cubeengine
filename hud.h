@@ -2,6 +2,7 @@
 #define __HUD_H__
 
 #include <GL/gl.h>
+#include "world.h"
 
 typedef struct tile_s {
 	int w;
@@ -33,5 +34,8 @@ void hud_cleanup(void);
 /* Selection tool */
 void hud_draw_selection_cross(void);
 void hud_draw_selection_cube(void);
+
+extern int hud_selected_block[3];
+extern chunk_t *hud_selected_chunk;
 
 #endif

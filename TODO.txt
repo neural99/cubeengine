@@ -1,5 +1,5 @@
-+ box picker
-+ enable modification
++ write back modifications
++ console
 + more optimizing
 + fps camera / collision
 + lightning

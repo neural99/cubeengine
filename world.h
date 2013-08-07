@@ -45,7 +45,9 @@ chunk_t* chunk_create(void);
 void chunk_rebuild(chunk_t *chunk);
 void chunk_render(chunk_t *chunk);
 void chunk_free(void *p);
-void chunk_add_modified_block(chunk_t *chunk, int x, int y, int z);
+void chunk_add_modified_block(chunk_t *chunk, int ix, int iy, int iz);
+/* Remove the block with world block coordinates (w_x, w_y, w_z) */
+void chunk_remove_block(chunk_t *c, int w_x, int w_y, int w_z);
 
 #define WORLD_FILE_MAGIC_NUMBER 274263364
 

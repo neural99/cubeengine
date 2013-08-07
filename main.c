@@ -11,7 +11,7 @@
 static SDL_Surface *screen;
 static int user_pressed_quit;
 static event_handler_t *quit_handler;
-static tile_t *cross_tile;
+static event_handler_t *mouse_down_handler;
 static Uint32 last_fps = 0;
 static skybox_t *skybox;
 
@@ -148,18 +148,34 @@ quit_callback(SDL_Event *e){
 	return 0;
 }
 
+int
+mouse_callback(SDL_Event *e){
+	if(e->button.type == SDL_MOUSEBUTTONDOWN && e->button.button == SDL_BUTTON_RIGHT){
+		if(hud_selected_block[0] != -1)
+			chunk_remove_block(hud_selected_chunk, hud_selected_block[0], hud_selected_block[1], hud_selected_block[2]);
+	}
+	return 0;
+}
+
 void 
 setup_event_handlers(void){
 	quit_handler = malloc(sizeof(event_handler_t));
 	quit_handler->type_filter = SDL_KEYDOWN;
 	quit_handler->callback = quit_callback;
 	event_add_event_handler(quit_handler);
+
+	mouse_down_handler = malloc(sizeof(event_handler_t));
+	mouse_down_handler->type_filter = SDL_MOUSEBUTTONDOWN;
+	mouse_down_handler->callback = mouse_callback;
+	event_add_event_handler(mouse_down_handler);
 }
 
 void
 cleanup_event_handlers(void){
 	event_remove_event_handler(quit_handler);
+	event_remove_event_handler(mouse_down_handler);
 	free(quit_handler);
+	free(mouse_down_handler);
 }
 
 void

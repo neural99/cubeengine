@@ -737,13 +737,25 @@ chunk_free(void *p){
 }
 
 void 
-chunk_add_modifid_block(chunk_t *c, int x, int y, int z){
+chunk_add_modified_block(chunk_t *c, int x, int y, int z){
 	if(!c->modified) c->modified = 1;
 	int *block_ind = malloc(sizeof(int) * 3);
 	block_ind[0] = x;
 	block_ind[1] = y;
 	block_ind[2] = z;
 	util_list_add(c->modified_list, block_ind);
+}
+
+void
+chunk_remove_block(chunk_t *c, int w_x, int w_y, int w_z){
+	int x, y, z;
+	x = w_x % CHUNK_SIZE;
+	y = w_y % CHUNK_SIZE;
+	z = w_z % CHUNK_SIZE;
+	c->blocks[x][y][z] = 0;
+	/* Todo: Do this later */
+	chunk_add_modified_block(c, x, y, z);
+	chunk_rebuild(c);
 }
 
 int 

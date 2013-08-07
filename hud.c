@@ -9,6 +9,9 @@
 #include "world.h"
 #include "camera.h"
 
+int hud_selected_block[3];
+chunk_t *hud_selected_chunk;
+
 static tile_t *cross_tile;
 static tileset_t *font_tileset;
 static int font_characters[][2] = {{ '0', 16 },
@@ -82,6 +85,9 @@ void
 hud_init(void){
 	font_tileset = hud_load_tileset("font.bmp", 6, 8, 16, 6, 1, 0xFF, 0x00, 0x00, GL_NEAREST);
 	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff, GL_NEAREST);
+	hud_selected_block[0] = -1;
+	hud_selected_block[1] = -1;
+	hud_selected_block[2] = -1;
 }
 
 void
@@ -275,20 +281,31 @@ static int
 get_block_relative_to_chunk(int c_i, double v){
 	long tmp;
 	tmp = lround(v) % (2 * CHUNK_SIZE);
-	return (int) lround((tmp + 0.5) / 2);	
+	int t = (int) lround((tmp + 0.5) / 2);	
+	if(t >= CHUNK_SIZE)
+		t = CHUNK_SIZE - 1;
+	return t;
+}
+
+static double 
+len_to_eye(double v[3]){
+	double tmp[3];
+	tmp[0] = camera->eye[0] - v[0];
+	tmp[1] = camera->eye[1] - v[1];
+	tmp[2] = camera->eye[2] - v[2];
+	return length(tmp);
 }
 
 
 static int 
-shoot_ray(int *world_x, int *world_y, int *world_z){
+shoot_ray(int *out_x, int *out_y, int *out_z, chunk_t **out_c){
 	double v[3];
 
 	v[0] = camera->eye[0];
 	v[1] = camera->eye[1];
 	v[2] = camera->eye[2];
-	fflush(stdout);
 
-	for(int i = 0; i < 200; i++){
+	while(len_to_eye(v) < 15){
 		int c_ix = v[0] / (2 * CHUNK_SIZE);
 		int c_iy = v[1] / (2 * CHUNK_SIZE);
 		int c_iz = v[2] / (2 * CHUNK_SIZE);
@@ -296,24 +313,21 @@ shoot_ray(int *world_x, int *world_y, int *world_z){
 		int b_y  = get_block_relative_to_chunk(c_iy, v[1]);
 		int b_z  = get_block_relative_to_chunk(c_iz, v[2]);
 		if(b_x >= 0 && b_y >= 0 && b_z >= 0){
-
-			printf("%d %d %d %d %d %d\n", c_ix, c_iy, c_iz, b_x, b_y, b_z);
-			fflush(stdout);
-
 			chunk_t *chunk = chunkmanager_get_chunk(c_ix, c_iy, c_iz);
 			if(chunk != NULL && block_isactive(chunk->blocks[b_x][b_y][b_z])){
-				*world_x = c_ix * (2 * CHUNK_SIZE) + 2 * b_x;
-				*world_y = c_iy * (2 * CHUNK_SIZE) + 2 * b_y;
-				*world_z = c_iz * (2 * CHUNK_SIZE) + 2 * b_z;
-				printf("selected %d %d %d\n", *world_x, *world_y, *world_z);
+				*out_x = c_ix * CHUNK_SIZE + b_x;
+				*out_y = c_iy * CHUNK_SIZE + b_y;
+				*out_z = c_iz * CHUNK_SIZE + b_z;
+				*out_c = chunk;
+				//printf("selected %d %d %d\n", *world_x, *world_y, *world_z);
 				return 1;
 			}
 		}
 
 		/* Advance */
-		v[0] += 0.1 * camera->forward.x;
-		v[1] += 0.1 * camera->forward.y;
-		v[2] += 0.1 * camera->forward.z;
+		v[0] += 0.5 * camera->forward.x;
+		v[1] += 0.5 * camera->forward.y;
+		v[2] += 0.5 * camera->forward.z;
 	}
 	return 0;
 }
@@ -321,12 +335,20 @@ shoot_ray(int *world_x, int *world_y, int *world_z){
 void
 hud_draw_selection_cube(void){
 	int x, y, z;
-	int r = shoot_ray(&x, &y, &z);
+	chunk_t *c;
+	int r = shoot_ray(&x, &y, &z, &c);
 	if(r){
+		/* Store in global variables */
+		hud_selected_chunk = c;
+		hud_selected_block[0] = x;
+		hud_selected_block[1] = y;
+		hud_selected_block[2] = z;
+
+		/* Draw debug information */
 		char buff[200];
 		memset(buff, 0, 200);
-		snprintf(buff, 200, "x:%d y:%d z:%d", x/2, y/2, z/2);
-		renderblock_outline(x, y, z);
+		snprintf(buff, 200, "x:%d y:%d z:%d", x, y, z);
+		renderblock_outline(2*x, 2*y, 2*z);
 		hud_draw_string(5, 520, 12, 16, buff);
 	}
 }
