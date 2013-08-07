@@ -324,3 +324,11 @@ quad_applyrotation(quaternion_t *res, quaternion_t *rot){
 	quad_mult(&tmp, rot, res);
 	quad_mult(res, &tmp, &conj_rot);
 }
+
+void
+vec_diff(double res[3], double a[3], double b[3]){
+	res[0] = a[0] - b[0];
+	res[1] = a[1] - b[1];
+	res[2] = a[2] - b[2];
+}
+

@@ -13,6 +13,7 @@
 
 typedef struct chunkmanager_s {
 	linked_list_t *render_chunks;
+	linked_list_t *loaded_chunks;
 
 	int active_blocks;
 	int n_trigs;
@@ -261,6 +262,58 @@ renderblock(int x, int y, int z){
 		glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
 		glVertex3f( BLOCK_LENGTH,  BLOCK_HEIGHT,  BLOCK_WIDTH);
 	glEnd();
+
+	glPopMatrix();
+}	
+
+void
+renderblock_outline(int x, int y, int z){
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glTranslatef(x, y, z);
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+	glColor4f(0.0f, 1.0f, 0.0f, 1.0f);
+	glBegin(GL_QUADS);
+		glNormal3f(0.0f, 0.0f, -1.0f);
+		glVertex3f( 1.1f, -1.1f, -1.1f);
+		glVertex3f(-1.1f, -1.1f, -1.1f);
+		glVertex3f(-1.1f,  1.1f, -1.1f);
+		glVertex3f( 1.1f,  1.1f, -1.1f);
+
+		glNormal3f(0.0f, 0.0f, 1.0f);
+		glVertex3f(-1.1f, -1.1f,  1.1f);
+		glVertex3f( 1.1f, -1.1f,  1.1f);
+		glVertex3f( 1.1f,  1.1f,  1.1f);
+		glVertex3f(-1.1f,  1.1f,  1.1f);
+
+		glNormal3f(1.0f, 0.0f, 0.0f);
+		glVertex3f( 1.1f, -1.1f,  1.1f);
+		glVertex3f( 1.1f, -1.1f, -1.1f);
+		glVertex3f( 1.1f,  1.1f, -1.1f);
+		glVertex3f( 1.1f,  1.1f,  1.1f);
+
+		glNormal3f(-1.0f, 0.0f, 0.0f);
+		glVertex3f(-1.1f, -1.1f, -1.1f);
+		glVertex3f(-1.1f, -1.1f,  1.1f);
+		glVertex3f(-1.1f,  1.1f,  1.1f);
+		glVertex3f(-1.1f,  1.1f, -1.1f);
+
+		glNormal3f(0.0f, -1.0f, 0.0f);
+		glVertex3f(-1.1f, -1.1f, -1.1f);
+		glVertex3f( 1.1f, -1.1f, -1.1f);
+		glVertex3f( 1.1f, -1.1f,  1.1f);
+		glVertex3f(-1.1f, -1.1f,  1.1f);
+
+		glNormal3f(0.0f, 1.0f, 0.0f);
+		glVertex3f( 1.1f,  1.1f, -1.1f);
+		glVertex3f(-1.1f,  1.1f, -1.1f);
+		glVertex3f(-1.1f,  1.1f,  1.1f);
+		glVertex3f( 1.1f,  1.1f,  1.1f);
+	glEnd();
+
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	glPopMatrix();
 }	
@@ -666,6 +719,7 @@ chunk_t*
 chunk_create(void){
 	chunk_t *tmp = malloc(sizeof(chunk_t));
 	tmp->pos[0] = 0; tmp->pos[1] = 0; tmp->pos[2] = 0;
+	tmp->ix = 0; tmp->iy = 0; tmp->iz = 0;
 	memset(tmp->blocks, 0, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * sizeof(Uint32));
 	tmp->mesh = mesh_create();
 	tmp->modified = 0;
@@ -748,6 +802,10 @@ world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
 		return -1;
 	}
 
+	c->ix = x;
+	c->iy = y;
+	c->iz = z;
+
 	c->pos[0] = x * (2 * CHUNK_SIZE);
 	c->pos[1] = y * (2 * CHUNK_SIZE);
 	c->pos[2] = z * (2 * CHUNK_SIZE);
@@ -755,10 +813,26 @@ world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
 	return 0;
 }
 
+/* TODO: Figure out a better data structure for looking up chunks by (ix,iy,iz) */
+chunk_t*
+chunkmanager_get_chunk(int ix, int iy, int iz){
+	linked_list_elm_t *elm;
+
+	elm = chunkmanager->loaded_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
+		if(c->ix == ix && c->iy == iy && c->iz == iz)
+			return c;
+		elm = elm->next;
+	}
+	return NULL;
+}
+
 void
 chunkmanager_init(world_file_t *world){
 	chunkmanager = malloc(sizeof(chunkmanager_t));
 	chunkmanager->render_chunks = util_list_create();
+	chunkmanager->loaded_chunks = util_list_create();
 	chunkmanager->active_blocks = 0;
 	chunkmanager->n_trigs = 0;
 	
@@ -767,7 +841,7 @@ chunkmanager_init(world_file_t *world){
 			for(int k = 0; k < (int)world->size[2] / CHUNK_SIZE; k++){
 				chunk_t *c = chunk_create();
 				world_read_chunk(world, i, j, k, c);
-				util_list_add(chunkmanager->render_chunks, c);
+				util_list_add(chunkmanager->loaded_chunks, c);
 			}
 }
 
@@ -775,7 +849,7 @@ void
 chunkmanager_rebuild(void){
 	linked_list_elm_t *elm;
 
-	elm = chunkmanager->render_chunks->head;
+	elm = chunkmanager->loaded_chunks->head;
 	while(elm != NULL){
 		chunk_t *c = elm->data;
 		chunk_rebuild(c);
@@ -797,9 +871,58 @@ chunkmanager_render_world(void){
 	}
 }
 
+static int
+should_chunk_be_rendered(chunk_t *c){
+	/* Don't render emtpy chunks */
+	if(c->active_blocks == 0)
+		return 0;
+
+	chunk_t *front = chunkmanager_get_chunk(c->ix, c->iy, c->iz+1);
+	chunk_t *back = chunkmanager_get_chunk(c->ix, c->iy, c->iz-1);
+	chunk_t *top = chunkmanager_get_chunk(c->ix, c->iy+1, c->iz);
+	chunk_t *bottom = chunkmanager_get_chunk(c->ix, c->iy-1, c->iz);
+	chunk_t *left = chunkmanager_get_chunk(c->ix-1, c->iy, c->iz);
+	chunk_t *right = chunkmanager_get_chunk(c->ix+1, c->iy, c->iz);
+
+	/* Don't render surrounded chunks */
+	int s = front != NULL && front->active_blocks == MAX_ACTIVE_BLOCKS &&
+		back  != NULL &&  back->active_blocks == MAX_ACTIVE_BLOCKS &&
+		top   != NULL &&   top->active_blocks == MAX_ACTIVE_BLOCKS &&
+		bottom!= NULL &&bottom->active_blocks == MAX_ACTIVE_BLOCKS &&
+		left  != NULL &&  left->active_blocks == MAX_ACTIVE_BLOCKS &&
+		right != NULL && right->active_blocks == MAX_ACTIVE_BLOCKS; 
+	if(s)
+		return 0;
+
+	return 1;
+}
+
+static void
+update_render_list(void){
+	linked_list_elm_t *elm;
+
+	/* Nuke render list */
+	util_list_free(chunkmanager->render_chunks);
+	chunkmanager->render_chunks = util_list_create();
+
+	elm = chunkmanager->loaded_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
+		if(should_chunk_be_rendered(c))
+			util_list_add(chunkmanager->render_chunks, c);	
+		elm = elm->next;
+	}
+}
+
+void
+chunkmanager_update(void){
+	update_render_list();
+}
+
 void
 chunkmanager_free(void){
-	util_list_free_custom(chunkmanager->render_chunks, chunk_free);
+	util_list_free_custom(chunkmanager->loaded_chunks, chunk_free);
+	util_list_free(chunkmanager->render_chunks);
 	free(chunkmanager);
 }
 

@@ -12,6 +12,7 @@ typedef Uint32 block_t;
 #define block_type(block) ( block & 0x70000000 )
 
 #define CHUNK_SIZE 16
+#define MAX_ACTIVE_BLOCKS ( CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE )
 
 typedef struct mesh_s {
 	linked_list_t *vertex_list;
@@ -31,6 +32,8 @@ void mesh_free(void *p);
 typedef struct chunk_s {
 	/* Position of origo in world coordinates */
 	double pos[3]; 
+	/* Chunk position in chunk coordinates */
+	int ix, iy, iz;
 	block_t blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
 	mesh_t *mesh;
 	int modified;
@@ -69,6 +72,7 @@ void chunkmanager_free(void);
 int chunkmanager_nchunks(void);
 int chunkmanager_activeblocks(void);
 int chunkmanager_ntrigs(void);
+chunk_t* chunkmanager_get_chunk(int, int, int);
 
 typedef struct skybox_s {
 	GLuint textureId;
@@ -88,5 +92,6 @@ void textureset_unbind(void);
 /* Misc utility */
 void renderblock(int x, int y, int z);
 void renderblock_with_textures(int x, int y, int z, GLuint cubemap);
+void renderblock_outline(int x, int y, int z);
 
 #endif

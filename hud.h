@@ -30,4 +30,8 @@ void hud_draw_string(int x, int y, int w, int h, char *str);
 
 void hud_cleanup(void);
 
+/* Selection tool */
+void hud_draw_selection_cross(void);
+void hud_draw_selection_cube(void);
+
 #endif

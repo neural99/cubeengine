@@ -165,21 +165,18 @@ cleanup_event_handlers(void){
 void
 load_hud(void){
 	hud_init();
-	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff, GL_LINEAR);
 }
 
 void
 draw_hud(void){
-	int x = (WINDOW_WIDTH - cross_tile->w)/2;
-	int y = (WINDOW_HEIGHT + cross_tile->h)/2;
-	hud_draw_tile(x, y, -1, -1, cross_tile);
+	hud_draw_selection_cube();
+	hud_draw_selection_cross();
 
-	/* draw fps */
+	/* draw fps and render info */
  	char buff[100];
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "%u", last_fps);
 	hud_draw_string(5, 565, 24, 32, buff);
-
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "chunks:%d blocks:%d trigs:%d", chunkmanager_nchunks(), chunkmanager_activeblocks(), chunkmanager_ntrigs());
 	hud_draw_string(5, 550, 12, 16, buff);
@@ -229,6 +226,7 @@ calc_fps(Uint32 now){
 void
 do_logic(Uint32 diff){
 	util_anim_update(diff);
+	chunkmanager_update();
 }
 
 void

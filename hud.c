@@ -1,10 +1,15 @@
 #include <stdio.h>
+#include <math.h>
 #include <SDL/sdl.h>
 #include <GL/glee.h>
+#include <GL/glu.h>
 
 #include "util.h"
 #include "hud.h"
+#include "world.h"
+#include "camera.h"
 
+static tile_t *cross_tile;
 static tileset_t *font_tileset;
 static int font_characters[][2] = {{ '0', 16 },
 				   { '1', 17 },
@@ -76,6 +81,7 @@ static void draw_quad_with_texture(int x, int y, int width, int height, GLuint t
 void 
 hud_init(void){
 	font_tileset = hud_load_tileset("font.bmp", 6, 8, 16, 6, 1, 0xFF, 0x00, 0x00, GL_NEAREST);
+	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff, GL_NEAREST);
 }
 
 void
@@ -255,5 +261,115 @@ void
 hud_unload_tile(tile_t *tile){
 	glDeleteTextures(1, &tile->textureId);
 	free(tile);
+}
+
+void
+hud_draw_selection_cross(void){
+	int x = (WINDOW_WIDTH - 33)/2;
+	int y = (WINDOW_HEIGHT + 33)/2;
+
+	hud_draw_tile(x, y, 33, 33, cross_tile);
+}
+
+static double
+len_from_eye(double v[3]){
+	double tmp[3];
+	tmp[0] = v[0] - camera->eye[0];
+	tmp[1] = v[1] - camera->eye[1];
+	tmp[2] = v[2] - camera->eye[2];
+	return length(tmp);
+}
+
+static int
+get_block_relative_to_chunk(int c_i, double v){
+	long tmp;
+	if(c_i == 0)
+		tmp = lround(v);
+	else
+		tmp = lround(v) % c_i;
+	return (int) tmp;	
+}
+
+static GLdouble*
+get_near_point(void){
+	GLdouble proj[16];
+	GLdouble modelview[16];
+	GLdouble x, y, z;
+	GLdouble *point;
+	GLint viewport[4];
+
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+	glGetDoublev(GL_PROJECTION_MATRIX, proj);
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	int res = gluUnProject(800 / 2, 800 / 2, 0, modelview, proj, viewport, &x, &y, &z);
+	if(!res)
+		FATAL_ERROR("gluUnProject returns false");
+	
+	point = malloc(sizeof(GLdouble) * 3);
+	point[0] = x;
+	point[1] = y;
+	point[2] = z;	
+	return point;
+}
+
+static int 
+shoot_ray(int *world_x, int *world_y, int *world_z){
+	double v[3];
+	double dir[3];
+
+	GLdouble *near_point = get_near_point();
+	vec_diff(dir, near_point, camera->eye);
+	free(near_point);
+
+	normalize(dir);
+
+	v[0] = near_point[0];
+	v[1] = near_point[1];
+	v[2] = near_point[2];
+	printf("initial v = %f %f %f len=%f\nforward=%f %f %f %f\n", v[0], v[1], v[2], len_from_eye(v), camera->forward.x, camera->forward.y, camera->forward.z, camera->forward.w);
+	fflush(stdout);
+
+	for(int i = 0; i < 500; i++){
+		int c_ix = v[0] / (2 * CHUNK_SIZE);
+		int c_iy = v[1] / (2 * CHUNK_SIZE);
+		int c_iz = v[2] / (2 * CHUNK_SIZE);
+		int b_x  = get_block_relative_to_chunk(c_ix, v[0]);
+		int b_y  = get_block_relative_to_chunk(c_iy, v[1]);
+		int b_z  = get_block_relative_to_chunk(c_iz, v[2]);
+		if(b_x >= 0 && b_y >= 0 && b_z >= 0){
+
+			printf("%d %d %d %d %d %d\n", c_ix, c_iy, c_iz, b_x, b_y, b_z);
+			fflush(stdout);
+
+			chunk_t *chunk = chunkmanager_get_chunk(c_ix, c_iy, c_iz);
+			if(chunk != NULL && block_isactive(chunk->blocks[b_x][b_y][b_z])){
+				*world_x = c_ix * (2 * CHUNK_SIZE) + 2 * b_x;
+				*world_y = c_iy * (2 * CHUNK_SIZE) + 2 * b_y;
+				*world_z = c_iz * (2 * CHUNK_SIZE) + 2 * b_z;
+				printf("selected %d %d %d\n", *world_x, *world_y, *world_z);
+				return 1;
+			}
+		}
+
+		/* Advance */
+		v[0] += 0.1 * dir[0];
+		v[1] += 0.1 * dir[1];
+		v[2] += 0.1 * dir[2];
+	}
+	return 0;
+}
+
+void
+hud_draw_selection_cube(void){
+	int x, y, z;
+	int r = shoot_ray(&x, &y, &z);
+	if(r){
+		char buff[200];
+		memset(buff, 0, 200);
+		snprintf(buff, 200, "x:%d y:%d z:%d", x/2, y/2, z/2);
+		renderblock_outline(x, y, z);
+		hud_draw_string(5, 520, 12, 16, buff);
+	}
 }
 
