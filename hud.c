@@ -189,7 +189,6 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	glEnable(GL_BLEND);
 	glEnable(GL_TEXTURE_2D);
 	glDisable(GL_CULL_FACE);
-	glDisable(GL_LIGHTING);
 	glClear(GL_DEPTH_BUFFER_BIT);	
 	glDepthMask(GL_FALSE);
 	glBindTexture(GL_TEXTURE_2D, texId);
@@ -203,7 +202,6 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	    glTexCoord2f(0, 0); glVertex3f(x, y + height, 0);
 	glEnd();
 	glEnable(GL_CULL_FACE);
-	//glEnable(GL_LIGHTING);
 	glDisable(GL_TEXTURE_2D);
 	glDepthMask(GL_TRUE);
 	if(polymode == GL_LINE)

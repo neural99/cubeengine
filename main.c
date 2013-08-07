@@ -105,29 +105,11 @@ init_graphics(void){
 	SDL_ShowCursor(0);
 	SDL_WM_GrabInput(SDL_GRAB_ON);
 
-	glShadeModel(GL_SMOOTH);
-
-	/* Global ambient light */
-	GLfloat lightColor[] = {0.2f, 0.2f, 0.2f, 1.0f};
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lightColor);
-
-	/* Use color to derive material */
-	glEnable(GL_COLOR_MATERIAL);
-	glColorMaterial(GL_FRONT, GL_DIFFUSE);
-	//glColorMaterial(GL_FRONT, GL_SPECULAR);
-	glColorMaterial(GL_FRONT, GL_AMBIENT);
-	
-	/* Enable light 0 */
-	float diffuse_light[] = { 0.3f, 0.3f, 0.3f, 1.0f };
-	float position_light[] = { 0.0f, -1.0f, 0.0f, 0.0f };
-	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse_light);
-	//glLightfv(GL_LIGHT0, GL_SPECULAR, specular_light);
-	glLightfv(GL_LIGHT0, GL_POSITION, position_light);
-	//glEnable(GL_LIGHT0);
+	glShadeModel(GL_FLAT);
 
 	//setup_phong();
 
-	//glEnable(GL_LIGHTING);
+	glDisable(GL_LIGHTING);
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);

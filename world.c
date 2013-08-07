@@ -57,17 +57,6 @@ get_block_type_textures(Uint32 block_type){
 }
 
 static void
-print_textureset_mappings(void){
-	linked_list_elm_t * elm;
-	elm = textureset_current.block_type_mappings->head;
-	while(elm != NULL){
-		block_type_textures_t *btt = elm->data;
-		printf("type=%d\n", btt->block_type);
-		elm = elm->next;
-	}
-}
-
-static void
 load_block_type_mappings(char *path){
 	FILE *f = fopen(path, "r");
 	if(f == NULL)
@@ -128,7 +117,7 @@ textureset_load_texture_atlas(char *path, int size){
 	textureset_current.n_h = n_h;
 	textureset_current.n_subtextures = n_w * n_h;
 
-	SDL_Surface *tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, size, size, 32, 
+	SDL_Surface *tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, image->w, image->h, 32, 
 #if SDL_BYTEORDER == SDL_LIL_ENDIAN
 					    0x000000FF, 
 					    0x0000FF00, 
@@ -141,17 +130,18 @@ textureset_load_texture_atlas(char *path, int size){
 					    0x000000FF
 #endif
 					);				    
-	Uint32 colorkey = SDL_MapRGB(image->format, 0xFF, 0x00, 0xFF);
-	SDL_SetColorKey(image, SDL_SRCCOLORKEY, colorkey); 
 	SDL_BlitSurface(image, NULL, tmp, NULL);
 
 	glGenTextures(1, &textureId);
 	glBindTexture(GL_TEXTURE_2D, textureId);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tmp->w, tmp->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, tmp->pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	SDL_FreeSurface(image);
+	SDL_FreeSurface(tmp);
 
 	textureset_current.textureId = textureId;
 }
@@ -175,24 +165,28 @@ textureset_texcoords(Uint32 block_type, int face, int vert){
 	int y = n_y * textureset_size;
 	int x = n_x * textureset_size;
 
+	//printf("%d\n", textureset_current.atlas_w);
+
 	GLfloat *uv = malloc(sizeof(GLfloat) * 2);
 
 	/* Counting CCW from (0,0) */
 	if(vert == 0){
-		uv[0] =  x / textureset_current.atlas_w;
-	        uv[1] =	 y / textureset_current.atlas_h; 
+		uv[0] =  x / (float)textureset_current.atlas_w;
+	        uv[1] =	 y / (float)textureset_current.atlas_h; 
 	}else if(vert == 1){
-		uv[0] =  (x + textureset_size) / textureset_current.atlas_w;
-	        uv[1] =	 y / textureset_current.atlas_h; 
+		uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+	        uv[1] =	 y / (float)textureset_current.atlas_h; 
 	}else if(vert == 2){
-		uv[0] =  (x + textureset_size) / textureset_current.atlas_w;
-	        uv[1] =	 (y + textureset_size) / textureset_current.atlas_h; 
+		uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+	        uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
 	}else if(vert == 3){
-		uv[0] =  x / textureset_current.atlas_w;
-	        uv[1] =	 (y + textureset_size) / textureset_current.atlas_h; 
+		uv[0] =  x / (float)textureset_current.atlas_w;
+	        uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
 	}else{
 		FATAL_ERROR("Invalid input to function. Should not happend.");
 	}
+	
+	//printf("u=%f,v=%f\n", uv[0],uv[1]);
 
 	return uv;
 }
@@ -214,7 +208,13 @@ textureset_free(void){
 
 void
 textureset_bind(void){
+	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, textureset_current.textureId);
+}
+
+void
+textureset_unbind(void){
+	glDisable(GL_TEXTURE_2D);	
 }
 
 void
@@ -273,7 +273,6 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 
 	glDepthMask(GL_FALSE);
 	glEnable(GL_TEXTURE_CUBE_MAP);
-	glDisable(GL_LIGHTING);
 	glDisable(GL_CULL_FACE);
 
 	float N = 1.0f / sqrt(3.0);
@@ -317,7 +316,6 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 		glTexCoord3f(-N,N,-N); glVertex3f(-BLOCK_LENGTH,  BLOCK_HEIGHT, -BLOCK_WIDTH);
 	glEnd();
 	glDisable(GL_TEXTURE_CUBE_MAP);
-	glEnable(GL_LIGHTING);
 	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_TRUE);
 
@@ -325,8 +323,9 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 }	
 
 void
-add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
+add_block_to_mesh(int i, int j, int k, chunk_t *chunk){
 	mesh_t *mesh = chunk->mesh;
+	int x = 2 * i; int y = 2 * j; int z = 2 * k;
 	
 	float p1[3] = { x - 1.0, y - 1.0, z + 1.0 };		
 	float p2[3] = { x + 1.0, y - 1.0, z + 1.0};
@@ -338,8 +337,8 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	float p7[3] = { x - 1.0, y + 1.0, z - 1.0 };
 	float p8[3] = { x + 1.0, y + 1.0, z - 1.0 };
 
-	/* Green color */
-	float c[3] = { 0.0f, 1.0f, 0.0f };
+	/* Color. To be used to control lightning */
+	float c[3] = { 1.0f, 1.0f, 1.0f };
 
 	/* Normals */
 	float n1[3] = { 0.0f, 0.0f, 1.0f };
@@ -350,69 +349,118 @@ add_block_to_mesh(int x, int y, int z, chunk_t *chunk){
 	float n6[3] = { 1.0f, 0.0f, 0.0f };
 
 	int i1, i2, i3, i4, i5, i6, i7, i8;
+	GLfloat* uv;
 	
 	/* Front */
-	int is_front_obscured = z + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x][y][z+1]);
+	int is_front_obscured = k + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[i][j][k+1]);
 	if(!is_front_obscured){
-		i1 = mesh_add_vertex(mesh, p1, c, n1);
-		i2 = mesh_add_vertex(mesh, p2, c, n1);
-		i3 = mesh_add_vertex(mesh, p3, c, n1);
-		i4 = mesh_add_vertex(mesh, p4, c, n1);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 0, 0);
+		i1 = mesh_add_vertex(mesh, p1, c, n1, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 0, 1);
+		i2 = mesh_add_vertex(mesh, p2, c, n1, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 0, 2);
+		i3 = mesh_add_vertex(mesh, p3, c, n1, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 0, 3);
+		i4 = mesh_add_vertex(mesh, p4, c, n1, uv);
+		free(uv);
 		mesh_add_trig(mesh, i1, i2, i3);
 		mesh_add_trig(mesh, i1, i3, i4);
 	}
 
 	/* Back */
-	int is_back_obscured = z - 1 > 0 && block_isactive(chunk->blocks[x][y][z-1]);
+	int is_back_obscured = k - 1 >= 0 && block_isactive(chunk->blocks[i][j][k-1]);
 	if(!is_back_obscured){
-		i5 = mesh_add_vertex(mesh, p5, c, n2);
-		i6 = mesh_add_vertex(mesh, p6, c, n2);
-		i7 = mesh_add_vertex(mesh, p7, c, n2);
-		i8 = mesh_add_vertex(mesh, p8, c, n2);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 1, 0);
+		i5 = mesh_add_vertex(mesh, p5, c, n2, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 1, 1);
+		i6 = mesh_add_vertex(mesh, p6, c, n2, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 1, 2);
+		i7 = mesh_add_vertex(mesh, p7, c, n2, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 1, 3);
+		i8 = mesh_add_vertex(mesh, p8, c, n2, uv);
+		free(uv);
 		mesh_add_trig(mesh, i5, i6, i7);
 		mesh_add_trig(mesh, i5, i7, i8);
 	}
 
 	/* Top */
-	int is_top_obscured = y + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x][y+1][z]);
+	int is_top_obscured = j + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[i][j+1][k]);
 	if(!is_top_obscured){
-		i3 = mesh_add_vertex(mesh, p3, c, n3);
-		i4 = mesh_add_vertex(mesh, p4, c, n3);
-		i7 = mesh_add_vertex(mesh, p7, c, n3);
-		i8 = mesh_add_vertex(mesh, p8, c, n3);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 2, 0);
+		i3 = mesh_add_vertex(mesh, p3, c, n3, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 2, 1);
+		i4 = mesh_add_vertex(mesh, p4, c, n3, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 2, 2);
+		i7 = mesh_add_vertex(mesh, p7, c, n3, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 2, 3);
+		i8 = mesh_add_vertex(mesh, p8, c, n3, uv);
+		free(uv);
 		mesh_add_trig(mesh, i4, i3, i8);
 		mesh_add_trig(mesh, i4, i8, i7);
 	}
 
 	/* Bottom */
-	int is_bottom_obscured = y - 1 > 0 && block_isactive(chunk->blocks[x][y-1][z]);
+	int is_bottom_obscured = j - 1 >= 0 && block_isactive(chunk->blocks[i][j-1][k]);
 	if(!is_bottom_obscured){
-		i1 = mesh_add_vertex(mesh, p1, c, n4);
-		i2 = mesh_add_vertex(mesh, p2, c, n4);
-		i5 = mesh_add_vertex(mesh, p5, c, n4);
-		i6 = mesh_add_vertex(mesh, p6, c, n4);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 3, 0);
+		i1 = mesh_add_vertex(mesh, p1, c, n4, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 3, 1);
+		i2 = mesh_add_vertex(mesh, p2, c, n4, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 3, 2);
+		i5 = mesh_add_vertex(mesh, p5, c, n4, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 3, 3);
+		i6 = mesh_add_vertex(mesh, p6, c, n4, uv);
+		free(uv);
 		mesh_add_trig(mesh, i6, i5, i2);
 		mesh_add_trig(mesh, i6, i2, i1);
 	}
 
 	/* Left */
-	int is_left_obscured = x - 1 > 0 && block_isactive(chunk->blocks[x-1][y][z]);
+	int is_left_obscured = i - 1 >= 0 && block_isactive(chunk->blocks[i-1][j][k]);
 	if(!is_left_obscured){
-		i1 = mesh_add_vertex(mesh, p1, c, n5);
-		i4 = mesh_add_vertex(mesh, p4, c, n5);
-		i6 = mesh_add_vertex(mesh, p6, c, n5);
-		i7 = mesh_add_vertex(mesh, p7, c, n5);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 4, 0);
+		i1 = mesh_add_vertex(mesh, p1, c, n5, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 4, 1);
+		i4 = mesh_add_vertex(mesh, p4, c, n5, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 4, 2);
+		i6 = mesh_add_vertex(mesh, p6, c, n5, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 4, 3);
+		i7 = mesh_add_vertex(mesh, p7, c, n5, uv);
+		free(uv);
 		mesh_add_trig(mesh, i6, i1, i4);
 		mesh_add_trig(mesh, i6, i4, i7);
 	}
 
 	/* Right */
-	int is_right_obscured = x + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[x+1][y][z]);
+	int is_right_obscured = i + 1 < CHUNK_SIZE && block_isactive(chunk->blocks[i+1][j][k]);
 	if(!is_right_obscured){
-		i2 = mesh_add_vertex(mesh, p2, c, n6);
-		i3 = mesh_add_vertex(mesh, p3, c, n6);
-		i5 = mesh_add_vertex(mesh, p5, c, n6);
-		i8 = mesh_add_vertex(mesh, p8, c, n6);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 5, 0);
+		i2 = mesh_add_vertex(mesh, p2, c, n6, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 5, 1);
+		i3 = mesh_add_vertex(mesh, p3, c, n6, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 5, 2);
+		i5 = mesh_add_vertex(mesh, p5, c, n6, uv);
+		free(uv);
+		uv = textureset_texcoords(block_type(chunk->blocks[i][j][k]), 5, 3);
+		i8 = mesh_add_vertex(mesh, p8, c, n6, uv);
+		free(uv);
 		mesh_add_trig(mesh, i2, i5, i8);
 		mesh_add_trig(mesh, i2, i8, i3);
 	}
@@ -467,11 +515,12 @@ mesh_free(void *p){
 }
 
 int
-mesh_add_vertex(mesh_t *m, float p[3], float c[3], float n[3]){
-	float *vert = malloc(sizeof(float) * 9);
+mesh_add_vertex(mesh_t *m, float p[3], float c[3], float n[3], float t[2]){
+	float *vert = malloc(sizeof(float) * 11);
 	memcpy(vert, p, 3 * sizeof(float));
 	memcpy(vert + 3, c, 3 * sizeof(float));
 	memcpy(vert + 6, n, 3 * sizeof(float));
+	memcpy(vert + 9, t, 2 * sizeof(float));
 	util_list_add(m->vertex_list, vert);
 	return m->n_verticies++;
 }
@@ -513,6 +562,10 @@ copy_vertex_data(float *data, mesh_t *m){
 		*p++ = vert[7];
 		*p++ = vert[8];
 
+		/* Texure coords */
+		*p++ = vert[9];
+		*p++ = vert[10];
+
 		elm = elm->next;
 	}
 }
@@ -532,30 +585,6 @@ copy_index_data(GLuint *data, mesh_t *m){
 	}
 }
 
-static void
-print_vertex_data(float *data, int size){
-	float *p = data;
-	int i = 0; 
-	while(i < size){
-		printf("%f %f %f\n", p[0], p[1], p[2]);
-
-		i++;
-		p+=3;
-	}
-}
-
-static void
-print_index_data(GLuint *data, int size){
-	GLuint *p = data;
-	int i = 0; 
-	while(i < size){
-		printf("%u %u %u\n", p[0], p[1], p[2]);
-
-		i++;
-		p+=3;
-	}
-}
-
 void
 mesh_rebuild(mesh_t *m){
 	/* Delete buffers if present */
@@ -565,12 +594,11 @@ mesh_rebuild(mesh_t *m){
 		glDeleteBuffers(1, &m->vertexId);
 
 	/* Fill vertex buffer */
-	int size = m->n_verticies * 9 * sizeof(float);
+	int size = m->n_verticies * 11 * sizeof(float);
 	float *vertex_data = malloc(size);
 	if(vertex_data == NULL)
 		FATAL_ERROR("Out of memory");
 	copy_vertex_data(vertex_data, m);
-	//print_vertex_data(vertex_data, m->n_verticies);
 	glGenBuffers(1, &m->vertexId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
 	glBufferData(GL_ARRAY_BUFFER, size, vertex_data, GL_STATIC_DRAW);
@@ -582,7 +610,6 @@ mesh_rebuild(mesh_t *m){
 	if(index_data == NULL)
 		FATAL_ERROR("Out of memory");
 	copy_index_data(index_data, m);
-	//print_index_data(index_data, m->n_trigs);
 	glGenBuffers(1, &m->elementId);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, index_data, GL_STATIC_DRAW);
@@ -591,20 +618,25 @@ mesh_rebuild(mesh_t *m){
 
 void 
 mesh_render(mesh_t *m){
+
 	//printf("mesh render, vertexId=%d, elementId=%d\n", m->vertexId, m->elementId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
 
 	glEnableClientState(GL_VERTEX_ARRAY);
-	glVertexPointer(3, GL_FLOAT, 9 * sizeof(float), NULL);
+	glVertexPointer(3, GL_FLOAT, 11 * sizeof(float), NULL);
 
 	glEnableClientState(GL_COLOR_ARRAY);
-	glColorPointer(3, GL_FLOAT, 9 * sizeof(float), (void*) (3 * sizeof(float))); 
+	glColorPointer(3, GL_FLOAT, 11 * sizeof(float), (void*) (3 * sizeof(float))); 
 
 	glEnableClientState(GL_NORMAL_ARRAY);
-	glNormalPointer(GL_FLOAT, 9 * sizeof(float), (void*) (6 * sizeof(float)));
+	glNormalPointer(GL_FLOAT, 11 * sizeof(float), (void*) (6 * sizeof(float)));
+
+	glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+	glTexCoordPointer(2, GL_FLOAT, 11 * sizeof(float), (void*) (9 * sizeof(float)));
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->elementId);	
-	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+	textureset_bind();
 	glDrawElements(
 			GL_TRIANGLES, 
 			m->n_trigs * 3,
@@ -612,8 +644,13 @@ mesh_render(mesh_t *m){
 			NULL
 		      );
 
+	textureset_unbind();
+
 	glDisableClientState(GL_COLOR_ARRAY);
 	glDisableClientState(GL_VERTEX_ARRAY);
+	glDisableClientState(GL_NORMAL_ARRAY);
+	glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+
 }
 
 void
@@ -711,9 +748,9 @@ world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
 		return -1;
 	}
 
-	c->pos[0] = x * (CHUNK_SIZE + 1);
-	c->pos[1] = y * (CHUNK_SIZE + 1);
-	c->pos[2] = z * (CHUNK_SIZE + 1);
+	c->pos[0] = x * (2 * CHUNK_SIZE);
+	c->pos[1] = y * (2 * CHUNK_SIZE);
+	c->pos[2] = z * (2 * CHUNK_SIZE);
 
 	return 0;
 }
@@ -752,16 +789,12 @@ void
 chunkmanager_render_world(void){
 	linked_list_elm_t *elm;
 
-	//glUseProgram(3);
-
 	elm = chunkmanager->render_chunks->head;
 	while(elm != NULL){
 		chunk_t *c = elm->data;
 		chunk_render(c);
 		elm = elm->next;
 	}
-
-	//glUseProgram(0);
 }
 
 void

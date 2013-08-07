@@ -22,7 +22,7 @@ typedef struct mesh_s {
 } mesh_t;
 
 mesh_t* mesh_create(void);
-int mesh_add_vertex(mesh_t *m, float p[3], float c[3], float n[3]);
+int mesh_add_vertex(mesh_t *m, float p[3], float c[3], float n[3], float t[2]);
 void mesh_add_trig(mesh_t *m, GLuint ind1, GLuint ind2, GLuint ind3);
 void mesh_rebuild(mesh_t *m);
 void mesh_render(mesh_t *m);
@@ -83,6 +83,7 @@ GLuint textureset_current_atlas(void);
 void textureset_free(void);
 GLfloat* textureset_texcoords(Uint32 block_type, int face, int vert);
 void textureset_bind(void);
+void textureset_unbind(void);
 
 /* Misc utility */
 void renderblock(int x, int y, int z);
