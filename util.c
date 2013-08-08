@@ -132,6 +132,17 @@ util_list_add(linked_list_t *lst, void *data){
 	}
 }
 
+void
+util_list_insert(linked_list_t *lst, void *data){
+	linked_list_elm_t *elm;
+
+	elm = malloc(sizeof(linked_list_elm_t));
+
+	elm->data = data;
+	elm->next = lst->head;
+	lst->head = elm;
+}
+
 int
 util_list_remove(linked_list_t *lst, void *data){
 	linked_list_elm_t *curr, *prev, *next;

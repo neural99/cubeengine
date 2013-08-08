@@ -34,7 +34,8 @@ linked_list_t *util_list_create(void);
 void util_list_free(linked_list_t* l);
 void util_list_free_data(linked_list_t* l);
 void util_list_free_custom(linked_list_t *l, void (*freefunc)(void*));
-void util_list_add(linked_list_t* lst, void *data);
+void util_list_add(linked_list_t* lst, void *data); /* Append */
+void util_list_insert(linked_list_t* lst, void *data); /* Insert first */
 int util_list_remove(linked_list_t* lst, void *data);
 int util_list_size(linked_list_t *lst);
 

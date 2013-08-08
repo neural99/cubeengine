@@ -60,7 +60,7 @@ event_remove_keypress_handler(keypress_handler_t *h){
 void
 event_add_event_handler(event_handler_t *h){
 	if(event_handler_list != NULL)
-		util_list_add(event_handler_list, h);
+		util_list_insert(event_handler_list, h);
 }
 
 void 
@@ -79,8 +79,11 @@ event_dispatch(SDL_Event *ev){
 	e = event_handler_list->head;
 	while(e != NULL){
 		event_handler_t *eh = e->data;
-		if(eh->type_filter == ev->type)
-			eh->callback(ev);	
+		if(eh->type_filter == ev->type){
+			int consumed = eh->callback(ev);	
+			if(consumed)
+				return;
+		}
 
 		e = e->next;
 	}

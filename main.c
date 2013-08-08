@@ -7,6 +7,7 @@
 #include "event.h"
 #include "camera.h"
 #include "world.h"
+#include "console.h"
 
 static SDL_Surface *screen;
 static int user_pressed_quit;
@@ -137,8 +138,10 @@ handle_SDL_events(void){
 
 int
 quit_callback(SDL_Event *e){
-	if(e->key.keysym.sym == SDLK_q)
-		user_pressed_quit = 1;
+	if(!console_active()){
+		if(e->key.keysym.sym == SDLK_q)
+			user_pressed_quit = 1;
+	}
 	return 0;
 }
 

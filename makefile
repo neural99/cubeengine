@@ -2,8 +2,8 @@ CC= gcc
 CFLAGS = -DDEBUG -DWIN32 -Wall -std=c99 -pedantic -Wextra
 LDFLAGS = -lmingw32 -lSDLmain -lSDL -lSDL -lopengl32 -lglu32
 
-C_FILES := main.c event.c camera.c util.c world.c hud.c
-OBJS := main.o event.o camera.o util.o world.o hud.o startup.o
+C_FILES := main.c event.c camera.c util.c world.c hud.c console.c
+OBJS := main.o event.o camera.o util.o world.o hud.o startup.o console.o
 
 all: cubeengine heightmap2wrl 
 
