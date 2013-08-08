@@ -18,6 +18,8 @@ typedef struct chunkmanager_s {
 
 	int active_blocks;
 	int n_trigs;
+
+	world_file_t *world;
 } chunkmanager_t;
 
 static chunkmanager_t *chunkmanager = NULL;
@@ -755,14 +757,26 @@ chunk_remove_block(chunk_t *c, int w_x, int w_y, int w_z){
 	y = w_y % CHUNK_SIZE;
 	z = w_z % CHUNK_SIZE;
 	c->blocks[x][y][z] = 0;
-	/* Todo: Do this later */
 	chunk_add_modified_block(c, x, y, z);
+	/* Todo: Do this later */
+	chunk_rebuild(c);
+}
+
+void
+chunk_add_block(chunk_t *c, Uint32 block_type, int w_x, int w_y, int w_z){
+	int x, y, z;
+	x = w_x % CHUNK_SIZE;
+	y = w_y % CHUNK_SIZE;
+	z = w_z % CHUNK_SIZE;
+	c->blocks[x][y][z] = block_type;
+	chunk_add_modified_block(c, x, y, z);
+	/* Todo: Do this later */
 	chunk_rebuild(c);
 }
 
 int 
 world_open(world_file_t *f){
-	f->file = fopen(f->path, "r+");
+	f->file = fopen(f->path, "rb+");
 	if(f->file == NULL){
 		LOG_DEBUG("Could not open file %s", f->path);
 		return -1;
@@ -827,6 +841,34 @@ world_read_chunk(world_file_t *f, int x, int y, int z, chunk_t *c){
 	return 0;
 }
 
+void
+world_update_chunk(world_file_t *f, chunk_t *chunk){
+	int chunk_linear_size = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+	int chunk_ind = chunk->iz + chunk->iy * f->size[2] / CHUNK_SIZE + chunk->ix * f->size[2] / CHUNK_SIZE * f->size[1] / CHUNK_SIZE;
+	int chunk_byte_offset = (4 + chunk_ind * chunk_linear_size) * sizeof(Uint32);
+
+	linked_list_elm_t *elm;
+	elm = chunk->modified_list->head;
+	while(elm != NULL){ 
+		int *block_ind = elm->data;
+		long block_byte_offset = (block_ind[2] + block_ind[1] * CHUNK_SIZE + block_ind[0] * CHUNK_SIZE * CHUNK_SIZE) * sizeof(Uint32);
+		printf("%d\n", block_byte_offset + chunk_byte_offset);
+
+		if(fseek(f->file, chunk_byte_offset + block_byte_offset, SEEK_SET) < 0)
+			FATAL_ERROR("Could not update chunk to file. fseek failed");
+
+		int n = fwrite(&chunk->blocks[block_ind[0]][block_ind[1]][block_ind[2]], sizeof(Uint32), 1, f->file);
+		if(n != 1)
+			FATAL_ERROR("Couldn't write block %d %d %d in chunk %d %d %d", block_ind[0], block_ind[1], block_ind[2], chunk->ix, chunk->iy, chunk->iz);
+		elm = elm->next;
+	}
+
+	/* Clean up and create new list */
+	util_list_free_data(chunk->modified_list);	
+	chunk->modified = 0;
+	chunk->modified_list = util_list_create();  
+}
+
 /* TODO: Figure out a better data structure for looking up chunks by (ix,iy,iz) */
 chunk_t*
 chunkmanager_get_chunk(int ix, int iy, int iz){
@@ -849,6 +891,8 @@ chunkmanager_init(world_file_t *world){
 	chunkmanager->loaded_chunks = util_list_create();
 	chunkmanager->active_blocks = 0;
 	chunkmanager->n_trigs = 0;
+	
+	chunkmanager->world = world;
 	
 	for(int i = 0; i < (int)world->size[0] / CHUNK_SIZE; i++)
 		for(int j = 0; j < (int)world->size[1] / CHUNK_SIZE; j++)
@@ -928,9 +972,22 @@ update_render_list(void){
 	}
 }
 
+static void
+write_modified(void){
+	linked_list_elm_t *elm;
+	elm = chunkmanager->loaded_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
+		if(c->modified)
+			world_update_chunk(chunkmanager->world, c);
+		elm = elm->next;
+	}
+}
+
 void
 chunkmanager_update(void){
 	update_render_list();
+	write_modified();
 }
 
 void
