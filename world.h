@@ -75,6 +75,7 @@ int chunkmanager_nchunks(void);
 int chunkmanager_activeblocks(void);
 int chunkmanager_ntrigs(void);
 chunk_t* chunkmanager_get_chunk(int, int, int);
+void chunkmanager_update(void);
 
 typedef struct skybox_s {
 	GLuint textureId;

@@ -11,10 +11,12 @@
 /* Logging */
 #define FATAL_ERROR(...) (util_fatalerror(__FILE__,__LINE__,__VA_ARGS__))
 #define LOG_DEBUG(...) (util_log_debug(__FILE__, __LINE__, __VA_ARGS__))
+#define LOG_WARN(...) (util_log_warn(__FILE__, __LINE__, __VA_ARGS__))
 
 void util_fatalerror(char *file, int line, char *fmt, ...);
 void util_log_error(char *file, int line, char *fmt, ...);
 void util_log_debug(char *file, int line, char *fmt, ...);
+void util_log_warn(char *file, int line, char *fmt, ...);
 
 /* Linked list */
 struct linked_list_s;
@@ -88,9 +90,10 @@ int util_hashtable_remove(hashtable_t *ht, char *key, int key_len);
 
 /* Settings manager */
 
-int settings_load_file(char *inifile);
-int settings_geti(char *property);
-double settings_getd(char *property);
-char* settings_gets(char *property);
+void util_settings_load_default_files(void);
+int util_settings_load_file(char *inifile);
+int util_settings_geti(char *property);
+float util_settings_getf(char *property);
+char* util_settings_gets(char *property);
 
 #endif

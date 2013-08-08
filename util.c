@@ -2,6 +2,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include "util.h"
+#include "startup.h"
+
+#ifdef WIN32
+#include <windows.h>
+#endif
+
+#define SETTINGS_TABLE_SIZE 2048
 
 typedef struct hashtable_bucket_elm_s {
 	char *key;
@@ -10,6 +17,7 @@ typedef struct hashtable_bucket_elm_s {
 } hashtable_bucket_elm_t;
 
 static linked_list_t *animation_list = NULL;
+static hashtable_t *settings_table = NULL;
 
 void
 util_fatalerror(char *file, int line, char *fmt, ...){
@@ -29,6 +37,16 @@ util_log_error(char *file, int line, char *fmt, ...){
 	char buff2[500];
 	vsprintf(buff2, fmt, va);
 	printf("Error(%s:%d): %s\n", file, line, buff2);
+	va_end(va);
+}
+
+void
+util_log_warn(char *file, int line, char *fmt, ...){
+	va_list va;
+	va_start(va, fmt);
+	char buff2[500];
+	vsprintf(buff2, fmt, va);
+	printf("Warning(%s:%d): %s\n", file, line, buff2);
 	va_end(va);
 }
 
@@ -466,5 +484,150 @@ util_hashtable_remove(hashtable_t *ht, char *key, int key_len){
 		free(match);
 	}
 	return util_list_remove(bucket, match);
+}
+
+static void
+add_integer_settings(char *name, int val){
+	/* First remove hashtable entry if exists */
+	util_hashtable_remove(settings_table, name, strlen(name));
+	int *data = malloc(sizeof(int));
+	*data = val;
+	util_hashtable_insert(settings_table, name, strlen(name), data);
+}
+
+static void
+add_float_settings(char *name, float val){
+	/* First remove hashtable entry if exists */
+	util_hashtable_remove(settings_table, name, strlen(name));
+	float *data = malloc(sizeof(float));
+	*data = val;
+	util_hashtable_insert(settings_table, name, strlen(name), data);
+}
+
+static void 
+add_string_settings(char *name, char *val){
+	/* First remove hashtable entry if exists */
+	util_hashtable_remove(settings_table, name, strlen(name));
+	char *data = malloc(strlen(val) + 1);
+	strcpy(data, val);
+	util_hashtable_insert(settings_table, name, strlen(name), data);
+}
+
+
+int 
+util_settings_load_file(char *inifile){
+	if(settings_table == NULL)
+		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
+
+#ifdef WIN32
+	char path[MAX_PATH];
+	ExpandEnvironmentStrings(inifile, path, MAX_PATH);
+#else
+	char *path = inifile;
+#endif
+
+	FILE *f = fopen(path, "r");
+	if(f == NULL)
+		return -1;
+	int lines = 0;
+	char buff[2048];
+	char name[2048];
+	char *str;
+	int dec;
+	float flt;
+	while(!feof(f)){
+		char *c = fgets(buff, 2048, f);
+		if(c == NULL)
+			break;
+
+		/* Copy name */
+		char *a = buff;
+		char *b = name;
+		while(*a != '=' && *a != 0) 
+			*b++ = *a++;
+		if(*a == 0)
+			FATAL_ERROR("Error parsing inifile %s near line %d. End of line reached before '=' was found", path, lines+1);
+		*b++ = 0;
+		str = a + 1;
+
+		int items;
+		items = sscanf(str, "%d", &dec);
+		if(items == 1){
+			add_integer_settings(name, dec);
+			/* Next line */
+			lines++;
+			continue;
+		}
+
+		items = sscanf(str, "%f", &flt);
+		if(items == 1){
+			add_float_settings(name, flt);
+			/* Next line */
+			lines++;
+			continue;
+		}
+
+		add_string_settings(name, str);
+
+		lines++;
+	}
+
+	return lines;
+}
+
+int 
+util_settings_geti(char *prop){
+	if(settings_table == NULL)
+		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
+	void *data;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), &data);
+	if(r){
+		int a = *((int*)data);
+		return a;
+	}else{
+		FATAL_ERROR("Property %s doesn not exist in settings table", prop);
+	}
+	/* Dummy */
+	return -1;
+}
+
+float
+util_settings_getf(char *prop){
+	if(settings_table == NULL)
+		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
+	void *data;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), &data);
+	if(r){
+		float a = *((float*)data);
+		return a;
+	}else{
+		FATAL_ERROR("Property %s doesn not exist in settings table", prop);
+	}
+	/* Dummy */
+	return -1;
+}
+
+char*
+util_settings_gets(char *prop){
+	if(settings_table == NULL)
+		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
+	void *data;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), &data);
+	if(r){
+		char *a = data;
+		return a;
+	}else{
+		FATAL_ERROR("Property %s doesn not exist in settings table", prop);
+	}
+	/* Dummy */
+	return NULL;
+}
+
+void
+util_settings_load_default_files(void){
+	if(util_settings_load_file("defaults.ini") < 0)
+		FATAL_ERROR("Could not load defaults settings from defaults.ini");
+	if(util_settings_load_file("%APPDATA%/cubeengine/settings.ini") < 0)
+		LOG_WARN("Could not read settings from user settings file");
 }
 

@@ -1,0 +1,30 @@
+#include "startup.h"
+#include "util.h"
+
+static linked_list_t *startup_list = NULL;
+
+void
+run_startup(void){
+	linked_list_elm_t *elm;
+
+	for(int prio = 0; prio < 100; prio++){
+		elm = startup_list->head;
+		while(elm != NULL){
+			startup_task_t *t = elm->data;
+			if(t->prio == prio){
+				LOG_DEBUG("starting up %s with prio %d\n", t->name, t->prio);
+				t->initfunc();
+			}
+			elm = elm->next;
+		}
+	}
+}
+
+void 
+startup_engine(void){
+	startup_list = util_list_create();
+
+	__CALLS__
+
+	run_startup();
+}

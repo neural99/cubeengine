@@ -6,6 +6,7 @@
 #include "util.h"
 #include "world.h"
 #include "camera.h"
+#include "startup.h"
 
 #define BLOCK_LENGTH 500.0f
 #define BLOCK_HEIGHT 500.0f
@@ -198,6 +199,7 @@ textureset_init(void){
 	load_block_type_mappings(textureset_mapping_path);
 	textureset_load_texture_atlas(textureset_atlas_path, textureset_size); 
 }
+STARTUP_PROC(textureset, 4, textureset_init)
 
 void 
 textureset_free(void){

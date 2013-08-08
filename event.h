@@ -2,6 +2,7 @@
 #define __EVENT_H__
 
 #include <SDL/sdl.h>
+#include "startup.h"
 
 typedef struct event_handler_s {
 	Uint8 type_filter;

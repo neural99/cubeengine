@@ -7,6 +7,7 @@
 #include "util.h"
 #include "camera.h"
 #include "event.h"
+#include "startup.h"
 
 #define STEP_FACTOR 0.1
 
@@ -32,7 +33,7 @@ static void remove_anim_tasks(void);
 
 void
 camera_create(void){ camera_t *tmp = malloc(sizeof(camera_t));
-	tmp->eye[0] = 0.0; tmp->eye[1] = 0.0; tmp->eye[2] = 0.0;
+	tmp->eye[0] = 0.0; tmp->eye[1] = 0.0; tmp->eye[2] = -10.0;
 	tmp->forward.x = 0.0; tmp->forward.y = 0.0; tmp->forward.z = 1.0; tmp->forward.w = 1.0; 
 	tmp->up.x = 0.0; tmp->up.y = 1.0; tmp->up.z = 0.0; tmp->up.w = 1.0;
 	//tmp->rot.x = 0.0; tmp->rot.y = 0.0; tmp->rot.z = 0.0; tmp->rot.w = 1.0; 
@@ -64,6 +65,7 @@ camera_create(void){ camera_t *tmp = malloc(sizeof(camera_t));
 
 	add_anim_tasks();
 }
+STARTUP_PROC(camera, 3, camera_create)
 
 void
 camera_free(void){

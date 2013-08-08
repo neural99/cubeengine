@@ -15,7 +15,6 @@ static event_handler_t *mouse_down_handler;
 static Uint32 last_fps = 0;
 static skybox_t *skybox;
 
-void load_hud(void);
 void load_world(void);
 
 void
@@ -115,11 +114,6 @@ init_graphics(void){
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
 
-	load_hud();
-
-	camera_create();
-	camera_move(0, 0, -10);
-
 	skybox = skybox_create();
 }
 
@@ -176,11 +170,6 @@ cleanup_event_handlers(void){
 	event_remove_event_handler(mouse_down_handler);
 	free(quit_handler);
 	free(mouse_down_handler);
-}
-
-void
-load_hud(void){
-	hud_init();
 }
 
 void
@@ -249,10 +238,12 @@ void
 game_loop(void){
 	user_pressed_quit = 0;
 
-	event_init();
-	setup_event_handlers();
 	init_graphics();
-	textureset_init();
+	startup_engine();
+	//hud_init();
+	//camera_create();
+	setup_event_handlers();
+	//textureset_init();
 	load_world();
 
 	Uint32 prev_ticks, curr_ticks;

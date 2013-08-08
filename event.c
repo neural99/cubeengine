@@ -30,7 +30,8 @@ event_init(void){
 	keypress_keyup_handler->type_filter = SDL_KEYUP;
 	keypress_keyup_handler->callback = handle_keypress_handlers;
 	event_add_event_handler(keypress_keyup_handler);
-}
+} 
+STARTUP_PROC(event, 1, event_init)
 
 void
 event_cleanup(void){

@@ -8,6 +8,7 @@
 #include "hud.h"
 #include "world.h"
 #include "camera.h"
+#include "startup.h"
 
 int hud_selected_block[3];
 chunk_t *hud_selected_chunk;
@@ -89,6 +90,7 @@ hud_init(void){
 	hud_selected_block[1] = -1;
 	hud_selected_block[2] = -1;
 }
+STARTUP_PROC(hud, 3, hud_init)
 
 void
 hud_cleanup(void){
