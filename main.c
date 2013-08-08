@@ -188,6 +188,8 @@ draw_hud(void){
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "chunks:%d blocks:%d trigs:%d", chunkmanager_nchunks(), chunkmanager_activeblocks(), chunkmanager_ntrigs());
 	hud_draw_string(5, 550, 12, 16, buff);
+
+	console_draw();
 }
 
 

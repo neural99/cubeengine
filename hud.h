@@ -1,7 +1,7 @@
 #ifndef __HUD_H__
 #define __HUD_H__
 
-#include <GL/gl.h>
+#include <GL/glee.h>
 #include "world.h"
 
 typedef struct tile_s {

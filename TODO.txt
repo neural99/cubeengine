@@ -1,7 +1,6 @@
-+ write back modifications
-+ shutdown/unload modules like startup system
 + settings should be typed
-+ console
++ console commands
++ shutdown/unload modules like startup system
 + more optimizing
 + fps camera / collision
 + lightning

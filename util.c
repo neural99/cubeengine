@@ -252,22 +252,25 @@ util_anim_update(Uint32 diff){
 		anim_task_t *task = elm->data;
 		if(task->is_active){
 			double units_this_frame = task->units_per_second * diff / 1000;
-			if(units_this_frame + task->current_length < task->total_length){
-				task->current_length += units_this_frame;
-				task->update(units_this_frame);
+			if(task->total_length > 0){
+				if(units_this_frame + task->current_length < task->total_length){
+					task->current_length += units_this_frame;
+					task->update(units_this_frame);
+				}else{
+					double units_left = task->total_length - task->current_length;
+					task->update(units_left);
+					task->is_active = 0;
+					task->current_length = 0;
+				}
 			}else{
-				double units_left = task->total_length - task->current_length;
-				task->update(units_left);
-				task->is_active = 0;
-				task->current_length = 0;
+				task->update(units_this_frame);
 			}
-
 		}
 		elm = elm->next;
 	}
 }
 
-void 
+static void 
 util_anim_add_anim_task(anim_task_t *task){
 	if(animation_list == NULL)
 		animation_list = util_list_create();

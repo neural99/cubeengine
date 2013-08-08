@@ -70,7 +70,6 @@ typedef struct anim_task_s {
 } anim_task_t;
 
 void util_anim_update(Uint32 diff);
-void util_anim_add_anim_task(anim_task_t *a);
 void util_anim_remove_anim_task(anim_task_t *b);
 void util_anim_reset_anim_task(anim_task_t *t);
 anim_task_t* util_anim_create(double ups, double total, int is_active, void (*update)(double factor));
