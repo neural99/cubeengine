@@ -3,6 +3,12 @@
 #include <math.h>
 #include "util.h"
 
+typedef struct hashtable_bucket_elm_s {
+	char *key;
+	int key_len;
+	void *data;
+} hashtable_bucket_elm_t;
+
 static linked_list_t *animation_list = NULL;
 
 void
@@ -330,5 +336,135 @@ vec_diff(double res[3], double a[3], double b[3]){
 	res[0] = a[0] - b[0];
 	res[1] = a[1] - b[1];
 	res[2] = a[2] - b[2];
+}
+
+
+static unsigned int
+hashfunction(char *key, int key_len){
+	int k = 31;	
+	int a = 0;
+
+	char *last = key + key_len;
+	int i = 0;
+	while(last != key){
+		a += k * *last;
+		k *= k;
+		i++;
+		last--;
+	}
+	return a;	
+}
+
+static int 
+keyequals(char *key1, int key1_len, char *key2, int key2_len){
+	if(key1_len != key2_len)
+		return 0;
+	for(int i = 0; i < key1_len; i++)
+		if(key1[i] != key2[i])
+			return 0;
+	return 1;
+}
+
+hashtable_t*
+util_hashtable_create(int n_buckets){
+	hashtable_t *ht = malloc(sizeof(hashtable_t));
+	ht->n_buckets = n_buckets;
+	ht->buckets = malloc(n_buckets * sizeof(linked_list_t*));
+	for(int i = 0; i < n_buckets; i++)
+		ht->buckets[i] = util_list_create();
+	return ht;
+}
+
+void
+util_hashtable_free(hashtable_t *h){
+	for(int i = 0; i < h->n_buckets; i++){
+		/* First free every bucket elment in bucket */
+		linked_list_elm_t *elm;
+		elm = h->buckets[i]->head;
+		while(elm != NULL){
+			hashtable_bucket_elm_t *be = elm->data;
+			free(be->key);
+			free(be);
+			elm = elm->next;
+		}
+		/* Then free list */
+		util_list_free(h->buckets[i]);
+	}
+	free(h->buckets);
+	free(h);
+}
+
+void
+util_hashtable_free_data(hashtable_t *h){
+	/* First call free on data pointers in the bucket elements */
+	for(int i = 0; i < h->n_buckets; i++){
+		linked_list_elm_t *elm;
+		elm = h->buckets[i]->head;
+		while(elm != NULL){
+			hashtable_bucket_elm_t *be = elm->data;
+			free(be->data);
+		}
+
+	}
+	util_hashtable_free(h);
+}
+
+int 
+util_hashtable_get(hashtable_t *ht, char *key, int key_len, void **out_data){
+	unsigned int ind = hashfunction(key, key_len) % ht->n_buckets;
+	linked_list_t *bucket = ht->buckets[ind];
+
+	linked_list_elm_t *elm;
+	elm = bucket->head;
+	while(elm != NULL){
+		hashtable_bucket_elm_t *be = elm->data;
+		if(keyequals(key, key_len, be->key, be->key_len)){
+			*out_data = be->data;
+			return 1;
+		}
+		elm = elm->next;
+	}
+
+	*out_data = NULL;
+	return 0;
+}
+
+void
+util_hashtable_insert(hashtable_t *ht, char *key, int key_len, void *data){
+	unsigned int ind = hashfunction(key, key_len) % ht->n_buckets;
+	linked_list_t *bucket = ht->buckets[ind];
+
+	hashtable_bucket_elm_t *be = malloc(sizeof(hashtable_bucket_elm_t));	
+	be->key = malloc(key_len);
+	memcpy(be->key, key, key_len);
+	be->key_len = key_len;
+	be->data = data;
+
+	util_list_add(bucket, be);
+}
+
+int 
+util_hashtable_remove(hashtable_t *ht, char *key, int key_len){
+	unsigned int ind = hashfunction(key, key_len) % ht->n_buckets;
+	linked_list_t *bucket = ht->buckets[ind];
+
+	/* Look for bucket elm with matching key */
+	linked_list_elm_t *elm;
+	elm = bucket->head;
+	hashtable_bucket_elm_t *match = NULL;
+	while(elm != NULL){
+		hashtable_bucket_elm_t *be = elm->data;
+		if(keyequals(key, key_len, be->key, be->key_len)){
+			match = be;
+			break;
+		}
+		elm = elm->next;
+	}
+
+	if(match != NULL){
+		free(match->key);
+		free(match);
+	}
+	return util_list_remove(bucket, match);
 }
 

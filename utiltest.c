@@ -4,7 +4,7 @@
 #include "util.h"
 
 int 
-main(void){
+main(int argc, char *argv[]){
 	int buf[100];
 	linked_list_t* lst;
 
@@ -43,6 +43,29 @@ main(void){
 	puts("");
 
 	util_list_free(lst);
+
+	hashtable_t *ht = util_hashtable_create(200);
+
+	for(int i = 0; i < 100; i++){
+		char buff[3];
+		snprintf(buff, 3, "%d", i);
+		util_hashtable_insert(ht, buff, 2, buff); 
+	}
+
+	char *d1= "11";
+	char *d2= "7";
+	util_hashtable_remove(ht, d1, 2);
+	util_hashtable_remove(ht, d2, 2);
+
+	for(int i = 0; i < 10; i++){
+		char *s;
+		char buff[3];
+		snprintf(buff, 3, "%d", i);
+		if(util_hashtable_get(ht, buff, 2, &s))
+			printf("i = %d, s = %s\n", i, s);
+		else
+			printf("i = %d not found", i);
+	} 
 
 	return 0;
 }

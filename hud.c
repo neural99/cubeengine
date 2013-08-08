@@ -278,7 +278,7 @@ hud_draw_selection_cross(void){
 }
 
 static int
-get_block_relative_to_chunk(int c_i, double v){
+get_block_relative_to_chunk(double v){
 	long tmp;
 	tmp = lround(v) % (2 * CHUNK_SIZE);
 	int t = (int) lround((tmp + 0.5) / 2);	
@@ -309,9 +309,9 @@ shoot_ray(int *out_x, int *out_y, int *out_z, chunk_t **out_c){
 		int c_ix = v[0] / (2 * CHUNK_SIZE);
 		int c_iy = v[1] / (2 * CHUNK_SIZE);
 		int c_iz = v[2] / (2 * CHUNK_SIZE);
-		int b_x  = get_block_relative_to_chunk(c_ix, v[0]);
-		int b_y  = get_block_relative_to_chunk(c_iy, v[1]);
-		int b_z  = get_block_relative_to_chunk(c_iz, v[2]);
+		int b_x  = get_block_relative_to_chunk(v[0]);
+		int b_y  = get_block_relative_to_chunk(v[1]);
+		int b_z  = get_block_relative_to_chunk(v[2]);
 		if(b_x >= 0 && b_y >= 0 && b_z >= 0){
 			chunk_t *chunk = chunkmanager_get_chunk(c_ix, c_iy, c_iz);
 			if(chunk != NULL && block_isactive(chunk->blocks[b_x][b_y][b_z])){

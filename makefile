@@ -19,7 +19,7 @@ clean: FRC
 	rm -f cubeengine.exe $(OBJS) 
 
 utiltest: utiltest.c util.c
-	gcc -std=c99 -o utiltest utiltest.c util.c
+	gcc -std=c99 -o utiltest $(LDFLAGS) utiltest.c util.c
 
 heightmap2wrl: heightmap2wrl.c
 	gcc -std=c99 -o heightmap2wrl heightmap2wrl.c -lmingw32 -lSDLmain -lSDL

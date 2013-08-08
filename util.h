@@ -72,4 +72,25 @@ void util_anim_remove_anim_task(anim_task_t *b);
 void util_anim_reset_anim_task(anim_task_t *t);
 anim_task_t* util_anim_create(double ups, double total, int is_active, void (*update)(double factor));
 
+/* Hash table */
+
+typedef struct hashtable_s {
+	int n_buckets;	
+	linked_list_t **buckets;
+} hashtable_t;
+
+hashtable_t* util_hashtable_create(int n_buckets);
+void util_hashtable_free(hashtable_t* ht);
+void util_hashtable_free_data(hashtable_t* ht);
+int util_hashtable_get(hashtable_t* ht, char *key, int key_len, void **out_data);
+void util_hashtable_insert(hashtable_t* ht, char *key, int key_len, void *data);
+int util_hashtable_remove(hashtable_t *ht, char *key, int key_len);
+
+/* Settings manager */
+
+int settings_load_file(char *inifile);
+int settings_geti(char *property);
+double settings_getd(char *property);
+char* settings_gets(char *property);
+
 #endif
