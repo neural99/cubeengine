@@ -10,6 +10,22 @@
 
 #define SETTINGS_TABLE_SIZE 2048
 
+typedef enum {
+	SETTING_INT,
+	SETTING_FLOAT,
+	SETTING_BOOL,
+	SETTING_STRING
+} setting_type_t;
+
+typedef struct setting_entry_s {
+	setting_type_t type;
+	int intval;
+	float floatval;
+	char *strval;
+} setting_entry_t;
+
+char *setting_type_names[]  = { "Integer", "Float", "Bool", "String" };
+
 typedef struct hashtable_bucket_elm_s {
 	char *key;
 	int key_len;
@@ -141,6 +157,20 @@ util_list_insert(linked_list_t *lst, void *data){
 	elm->data = data;
 	elm->next = lst->head;
 	lst->head = elm;
+}
+
+void*
+util_list_get(linked_list_t *lst, int ind){
+	int i = 0;
+	linked_list_elm_t *elm;
+	elm = lst->head;
+	while(elm != NULL){
+		if(i == ind)
+			return elm->data;	
+		i++;
+		elm = elm->next;
+	}
+	return NULL;
 }
 
 int
@@ -371,6 +401,7 @@ vec_diff(double res[3], double a[3], double b[3]){
 }
 
 
+/* Java's method of calculating String hashes */
 static unsigned int
 hashfunction(char *key, int key_len){
 	int k = 31;	
@@ -500,33 +531,70 @@ util_hashtable_remove(hashtable_t *ht, char *key, int key_len){
 	return util_list_remove(bucket, match);
 }
 
+
+int
+util_settings_remove(char *prop){
+	setting_entry_t *entry;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), (void**) &entry);
+	if(r){
+		if(entry->type == SETTING_STRING)
+			free(entry->strval);
+		free(entry);
+		util_hashtable_remove(settings_table, prop, strlen(prop));
+		return 1;
+	}else{
+		return 0;
+	}
+}
+
 static void
 add_integer_settings(char *name, int val){
 	/* First remove hashtable entry if exists */
-	util_hashtable_remove(settings_table, name, strlen(name));
-	int *data = malloc(sizeof(int));
-	*data = val;
-	util_hashtable_insert(settings_table, name, strlen(name), data);
+	util_settings_remove(name);
+
+	setting_entry_t *entry = malloc(sizeof(setting_entry_t));
+	entry->type = SETTING_INT;
+	entry->intval = val;
+
+	util_hashtable_insert(settings_table, name, strlen(name), entry);
 }
 
 static void
 add_float_settings(char *name, float val){
 	/* First remove hashtable entry if exists */
-	util_hashtable_remove(settings_table, name, strlen(name));
-	float *data = malloc(sizeof(float));
-	*data = val;
-	util_hashtable_insert(settings_table, name, strlen(name), data);
+	util_settings_remove(name);
+
+	setting_entry_t *entry = malloc(sizeof(setting_entry_t));
+	entry->type = SETTING_FLOAT;
+	entry->floatval = val;
+	
+	util_hashtable_insert(settings_table, name, strlen(name), entry);
 }
 
 static void 
 add_string_settings(char *name, char *val){
 	/* First remove hashtable entry if exists */
-	util_hashtable_remove(settings_table, name, strlen(name));
-	char *data = malloc(strlen(val) + 1);
-	strcpy(data, val);
-	util_hashtable_insert(settings_table, name, strlen(name), data);
+	util_settings_remove(name);
+
+	setting_entry_t *entry = malloc(sizeof(setting_entry_t));
+	entry->strval = malloc(strlen(val) + 1);
+	entry->type = SETTING_STRING;
+	strcpy(entry->strval, val);
+
+	util_hashtable_insert(settings_table, name, strlen(name), entry);
 }
 
+static void 
+add_bool_settings(char *name, int val){
+	/* First remove hashtable entry if exists */
+	util_settings_remove(name);
+
+	setting_entry_t *entry = malloc(sizeof(setting_entry_t));
+	entry->type = SETTING_BOOL;
+	entry->intval = val;
+
+	util_hashtable_insert(settings_table, name, strlen(name), entry);
+}
 
 int 
 util_settings_load_file(char *inifile){
@@ -581,6 +649,25 @@ util_settings_load_file(char *inifile){
 			continue;
 		}
 
+		/* Treat True and False as boolean values */
+		int tru = strcmp(str, "True\n") == 0 || strcmp(str, "true\n") == 0;
+	        int fal = strcmp(str, "False\n") == 0 || strcmp(str, "false\n") == 0;
+		if(tru){
+			add_bool_settings(name, 1);
+			lines++;
+			continue;
+		}
+		if(fal){
+			add_bool_settings(name, 0);
+			lines++;
+			continue;
+		}
+
+		/* Remove '\n' */
+		char *p1 = str;
+		while(*p1 != 0 && *p1 != '\n') p1++;
+		if(*p1 != 0) *p1 = 0;
+
 		add_string_settings(name, str);
 
 		lines++;
@@ -590,58 +677,91 @@ util_settings_load_file(char *inifile){
 }
 
 int 
-util_settings_geti(char *prop){
+util_settings_geti(char *prop, int *out){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
-	void *data;
-	int r = util_hashtable_get(settings_table, prop, strlen(prop), &data);
-	if(r){
-		int a = *((int*)data);
-		return a;
-	}else{
-		FATAL_ERROR("Property %s doesn not exist in settings table", prop);
+	setting_entry_t *entry;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), (void**) &entry);
+	if(r && entry->type == SETTING_INT){
+		*out = entry->intval;
+		return 0;
 	}
-	/* Dummy */
+	
+	if(r)
+		LOG_DEBUG("Setting %s was accessed as a int, but setting type is %s", prop, setting_type_names[entry->type]);
+	else
+		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+
 	return -1;
 }
 
-float
-util_settings_getf(char *prop){
+int 
+util_settings_getb(char *prop, int *out){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
-	void *data;
-	int r = util_hashtable_get(settings_table, prop, strlen(prop), &data);
-	if(r){
-		float a = *((float*)data);
-		return a;
-	}else{
-		FATAL_ERROR("Property %s doesn not exist in settings table", prop);
+	setting_entry_t *entry;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), (void**) &entry);
+	if(r && entry->type == SETTING_BOOL){
+		*out = entry->intval;
+		return 0;
 	}
-	/* Dummy */
+	
+	if(r)
+		LOG_DEBUG("Setting %s was accessed as a bool, but setting type is %s", prop, setting_type_names[entry->type]);
+	else
+		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+
 	return -1;
 }
 
-char*
-util_settings_gets(char *prop){
+int
+util_settings_getf(char *prop, float *out){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
-	void *data;
-	int r = util_hashtable_get(settings_table, prop, strlen(prop), &data);
-	if(r){
-		char *a = data;
-		return a;
-	}else{
-		FATAL_ERROR("Property %s doesn not exist in settings table", prop);
+	setting_entry_t *entry;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), (void**) &entry);
+	if(r && entry->type == SETTING_FLOAT){
+		*out = entry->floatval;
+		return 0;
 	}
-	/* Dummy */
-	return NULL;
+	
+	if(r)
+		LOG_DEBUG("Setting %s was accessed as a float, but setting type is %s", prop, setting_type_names[entry->type]);
+	else
+		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+
+	return -1;
+}
+
+int
+util_settings_gets(char *prop, char** out){
+	if(settings_table == NULL)
+		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
+	setting_entry_t *entry;
+	int r = util_hashtable_get(settings_table, prop, strlen(prop), (void**) &entry);
+	if(r && entry->type == SETTING_STRING){
+		*out = entry->strval;
+		return 0;
+	}
+	
+	if(r)
+		LOG_DEBUG("Setting %s was accessed as a string, but setting type is %s", prop, setting_type_names[entry->type]);
+	else
+		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+
+	return -1;
 }
 
 void
 util_settings_load_default_files(void){
 	if(util_settings_load_file("defaults.ini") < 0)
 		FATAL_ERROR("Could not load defaults settings from defaults.ini");
+
+	/* TODO: Load ini file from users home dir on *nix */
+#ifdef WIN32
 	if(util_settings_load_file("%APPDATA%/cubeengine/settings.ini") < 0)
 		LOG_WARN("Could not read settings from user settings file");
-}
+#endif
 
+}
+STARTUP_PROC(settings, 0, util_settings_load_default_files)

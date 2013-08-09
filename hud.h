@@ -26,8 +26,11 @@ tile_t* hud_load_single_tile(char *path, Uint8 ck_r, Uint8 ck_g, Uint8 ck_b, GLi
 void hud_unload_tile(tile_t *tile);
 void hud_unload_tileset(tileset_t *set);
 void hud_draw_tile(int x, int y, int w, int h, tile_t *tile);
+void hud_draw_tile_with_alpha(int x, int y, int w, int h, float alpha, tile_t *tile);
 void hud_draw_tile_from_tileset(int x, int y, int w, int h, int index, tileset_t *set);
+void hud_draw_tile_from_tileset_with_alpha(int x, int y, int w, int h, int index, float alpha, tileset_t *set);
 void hud_draw_string(int x, int y, int w, int h, char *str);
+void hud_draw_string_with_alpha(int x, int y, int w, int h, float alpha, char *str);
 
 void hud_cleanup(void);
 

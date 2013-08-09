@@ -36,6 +36,7 @@ void util_list_free_data(linked_list_t* l);
 void util_list_free_custom(linked_list_t *l, void (*freefunc)(void*));
 void util_list_add(linked_list_t* lst, void *data); /* Append */
 void util_list_insert(linked_list_t* lst, void *data); /* Insert first */
+void* util_list_get(linked_list_t* lst, int ind);
 int util_list_remove(linked_list_t* lst, void *data);
 int util_list_size(linked_list_t *lst);
 
@@ -92,8 +93,10 @@ int util_hashtable_remove(hashtable_t *ht, char *key, int key_len);
 
 void util_settings_load_default_files(void);
 int util_settings_load_file(char *inifile);
-int util_settings_geti(char *property);
-float util_settings_getf(char *property);
-char* util_settings_gets(char *property);
+int util_settings_remove(char *property);
+int util_settings_geti(char *property, int *out);
+int util_settings_getb(char *property, int *out);
+int util_settings_getf(char *property, float *out);
+int util_settings_gets(char *property, char **out);
 
 #endif

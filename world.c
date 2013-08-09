@@ -24,7 +24,7 @@ typedef struct chunkmanager_s {
 
 static chunkmanager_t *chunkmanager = NULL;
 
-/* TODO: Read this from settings file */
+/* NB: Overwritten by values from settings system */
 static char *textureset_atlas_path = "block_textures.bmp";
 static int textureset_size = 32;
 static char *textureset_mapping_path = "block_texture_mappings.txt";
@@ -197,6 +197,11 @@ textureset_texcoords(Uint32 block_type, int face, int vert){
 
 void
 textureset_init(void){
+	/* Load global variables from settings */
+	util_settings_gets("textureset/atlas_path", &textureset_atlas_path);
+	util_settings_geti("textureset/size", &textureset_size);
+	util_settings_gets("textureset/mappings_path", &textureset_mapping_path);
+
 	textureset_current.block_type_mappings = util_list_create();
 	load_block_type_mappings(textureset_mapping_path);
 	textureset_load_texture_atlas(textureset_atlas_path, textureset_size); 
@@ -334,6 +339,7 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 
 	float N = 1.0f / sqrt(3.0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glBegin(GL_QUADS);
 		/* Front */
 		//glNormal3f(0.0f, 0.0f, 1.0f);

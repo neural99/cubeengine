@@ -1,6 +1,6 @@
-+ settings should be typed
 + console commands
 + shutdown/unload modules like startup system
++ more testing/larger worlds
 + more optimizing
 + fps camera / collision
 + lightning

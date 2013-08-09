@@ -82,7 +82,7 @@ static int font_characters[][2] = {{ '0', 16 },
 				   { '>', 30 },
 				   { '_', 63 }};
 
-static void draw_quad_with_texture(int x, int y, int width, int height, GLuint texId);
+static void draw_quad_with_texture(int x, int y, int width, int height, float alpha, GLuint texId);
 
 void 
 hud_init(void){
@@ -115,18 +115,23 @@ find_fontcharacter(char ch){
 }
 
 void
-hud_draw_string(int x, int y, int w, int h, char *str){
+hud_draw_string_with_alpha(int x, int y, int w, int h, float alpha, char *str){
 	char *p = str;
 	int i = 0;
 	while(*p != 0){
 		int ind = find_fontcharacter(*p);
 		if(ind != -1)
-			hud_draw_tile_from_tileset(x + i * w, y, w, h, ind, font_tileset);
+			hud_draw_tile_from_tileset_with_alpha(x + i * w, y, w, h, ind, alpha, font_tileset);
 		else
-			hud_draw_tile_from_tileset(x + i * w, y, w, h, 31, font_tileset);
+			hud_draw_tile_from_tileset_with_alpha(x + i * w, y, w, h, 31, alpha, font_tileset);
 		i++;
 		p++;
 	}
+}
+
+void
+hud_draw_string(int x, int y, int w, int h, char *str){
+	hud_draw_string_with_alpha(x, y, w, h, 1.0, str);
 }
 
 tileset_t*
@@ -179,21 +184,31 @@ hud_load_tileset(char *path, int tw, int th, int nw, int nh, int border, Uint8 c
 }
 
 void
-hud_draw_tile_from_tileset(int x, int y, int w, int h, int index, tileset_t *tileset){
+hud_draw_tile_from_tileset_with_alpha(int x, int y, int w, int h, int index, float alpha, tileset_t *tileset){
 	int width = w != -1 ? w : tileset->w;
 	int height = h != -1 ? h : tileset->h;
-	draw_quad_with_texture(x, y, width, height, tileset->textureIds[index]);
+	draw_quad_with_texture(x, y, width, height, alpha, tileset->textureIds[index]);
+}
+
+void
+hud_draw_tile_from_tileset(int x, int y, int w, int h, int index, tileset_t *tileset){
+	hud_draw_tile_from_tileset_with_alpha(x, y, w, h, index, 1.0, tileset);
+}
+
+void
+hud_draw_tile_with_alpha(int x, int y, int w, int h, float alpha, tile_t *tile){
+	int width = w != -1 ? w : tile->w;
+	int height = h != -1 ? h : tile->h;
+	draw_quad_with_texture(x, y, width, height, alpha, tile->textureId);
 }
 
 void
 hud_draw_tile(int x, int y, int w, int h, tile_t *tile){
-	int width = w != -1 ? w : tile->w;
-	int height = h != -1 ? h : tile->h;
-	draw_quad_with_texture(x, y, width, height, tile->textureId);
+	hud_draw_tile_with_alpha(x, y, w, h, 1.0, tile);
 }
 
 static void
-draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
+draw_quad_with_texture(int x, int y, int width, int height, float alpha, GLuint texId){
 	GLint polymode;
 	glGetIntegerv(GL_POLYGON_MODE, &polymode);
 	if(polymode == GL_LINE)
@@ -210,7 +225,7 @@ draw_quad_with_texture(int x, int y, int width, int height, GLuint texId){
 	glClear(GL_DEPTH_BUFFER_BIT);	
 	glDepthMask(GL_FALSE);
 	glBindTexture(GL_TEXTURE_2D, texId);
-	glColor4f(1.0,1.0,1.0,1.0);
+	glColor4f(1.0,1.0,1.0,alpha);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glBegin(GL_QUADS);
