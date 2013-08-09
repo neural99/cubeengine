@@ -7,6 +7,7 @@
 #include "util.h"
 #include "camera.h"
 #include "event.h"
+#include "console.h"
 #include "startup.h"
 
 #define STEP_FACTOR 0.1
@@ -21,6 +22,9 @@ static keypress_handler_t *wireframe_handler;
 
 static anim_task_t *animation_tasks[4];
 
+static console_command_t *pos_print_cmd;
+static console_command_t *pos_move_cmd;
+
 static int handle_keypress(SDL_Event *e);
 static int handle_mousemove(SDL_Event *e);
 static int handle_wireframe_key(SDL_Event *e);
@@ -30,6 +34,8 @@ static void move_left(double upf);
 static void move_right(double upf);
 static void add_anim_tasks(void);
 static void remove_anim_tasks(void);
+static void add_console_cmds(void);
+static void remove_console_cmds(void);
 
 void
 camera_create(void){ camera_t *tmp = malloc(sizeof(camera_t));
@@ -64,6 +70,7 @@ camera_create(void){ camera_t *tmp = malloc(sizeof(camera_t));
 	event_add_keypress_handler(wireframe_handler);
 
 	add_anim_tasks();
+	add_console_cmds();
 }
 STARTUP_PROC(camera, 3, camera_create)
 
@@ -79,6 +86,7 @@ camera_free(void){
 	free(wireframe_handler);
 
 	remove_anim_tasks();
+	remove_console_cmds();
 
 	free(camera);
 }
@@ -279,3 +287,47 @@ remove_anim_tasks(void){
 	}
 }
 
+static char* 
+pos_print_execute(void **args){
+	char *out = malloc(200);
+	snprintf(out, 200, "pos:(%f,%f,%f)", camera->eye[0], camera->eye[1], camera->eye[2]);
+	return out;
+}
+
+static char*
+pos_move_execute(void **args){
+	float x, y, z;
+	x = *((float*)args[0]);
+	y = *((float*)args[1]);
+	z = *((float*)args[1]);
+	
+	camera_move(x, y, z);
+
+	char *out = malloc(20);
+	snprintf(out, 20, "Pos changed");
+	return out;
+}
+
+static void
+add_console_cmds(void){
+	pos_print_cmd = malloc(sizeof(console_command_t));
+	strcpy(pos_print_cmd->name, "pos");
+	pos_print_cmd->n_args = 0;
+	pos_print_cmd->execute = pos_print_execute;
+	console_add_command(pos_print_cmd);
+
+	pos_move_cmd = malloc(sizeof(console_command_t));
+	strcpy(pos_move_cmd->name, "pos");
+	pos_move_cmd->n_args = 3;
+	memset(pos_move_cmd->arg_types, 0, sizeof(console_command_arg_type_t) * MAX_ARGS);
+	pos_move_cmd->arg_types[0] = ARG_FLOAT; pos_move_cmd->arg_types[1] = ARG_FLOAT; pos_move_cmd->arg_types[2] = ARG_FLOAT;
+	console_add_command(pos_move_cmd);
+}
+
+static void
+remove_console_cmds(void){
+	console_remove_command(pos_print_cmd);
+	console_remove_command(pos_move_cmd);
+	free(pos_print_cmd);
+	free(pos_move_cmd);
+}

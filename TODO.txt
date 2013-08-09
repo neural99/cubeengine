@@ -2,5 +2,5 @@
 + shutdown/unload modules like startup system
 + more testing/larger worlds
 + more optimizing
-+ fps camera / collision
++ fps camera / collision / perfect camera
 + lightning

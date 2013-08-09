@@ -681,7 +681,6 @@ mesh_rebuild(mesh_t *m){
 
 void 
 mesh_render(mesh_t *m){
-
 	//printf("mesh render, vertexId=%d, elementId=%d\n", m->vertexId, m->elementId);
 	glBindBuffer(GL_ARRAY_BUFFER, m->vertexId);
 
@@ -858,7 +857,7 @@ world_update_chunk(world_file_t *f, chunk_t *chunk){
 	while(elm != NULL){ 
 		int *block_ind = elm->data;
 		long block_byte_offset = (block_ind[2] + block_ind[1] * CHUNK_SIZE + block_ind[0] * CHUNK_SIZE * CHUNK_SIZE) * sizeof(Uint32);
-		printf("%d\n", block_byte_offset + chunk_byte_offset);
+		//printf("%d\n", block_byte_offset + chunk_byte_offset);
 
 		if(fseek(f->file, chunk_byte_offset + block_byte_offset, SEEK_SET) < 0)
 			FATAL_ERROR("Could not update chunk to file. fseek failed");
