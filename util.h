@@ -27,6 +27,7 @@
 #define FATAL_ERROR(...) (util_fatalerror(__FILE__,__LINE__,__VA_ARGS__))
 #define LOG_DEBUG(...) (util_log_debug(__FILE__, __LINE__, __VA_ARGS__))
 #define LOG_WARN(...) (util_log_warn(__FILE__, __LINE__, __VA_ARGS__))
+#define LOG_FATAL_OR_DEBUG(abort, ...) do { if(abort) FATAL_ERROR(__VA_ARGS__); else LOG_DEBUG(__VA_ARGS__); } while(0)
 
 void util_fatalerror(char *file, int line, char *fmt, ...);
 void util_log_error(char *file, int line, char *fmt, ...);
@@ -113,5 +114,11 @@ int util_settings_geti(char *property, int *out);
 int util_settings_getb(char *property, int *out);
 int util_settings_getf(char *property, float *out);
 int util_settings_gets(char *property, char **out);
+
+/* These functions aborts the program if the property doesn't exist */
+int util_settings_polli(char *property);
+int util_settings_pollb(char *property);
+float util_settings_pollf(char *property);
+char* util_settings_polls(char *property);
 
 #endif

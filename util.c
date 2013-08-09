@@ -691,8 +691,8 @@ util_settings_load_file(char *inifile){
 	return lines;
 }
 
-int 
-util_settings_geti(char *prop, int *out){
+static int 
+settings_geti(char *prop, int *out, int abort){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
 	setting_entry_t *entry;
@@ -703,15 +703,15 @@ util_settings_geti(char *prop, int *out){
 	}
 	
 	if(r)
-		LOG_DEBUG("Setting %s was accessed as a int, but setting type is %s", prop, setting_type_names[entry->type]);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s was accessed as a int, but setting type is %s", prop, setting_type_names[entry->type]);
 	else
-		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s doesn not exist in settings table", prop);
 
 	return -1;
 }
 
-int 
-util_settings_getb(char *prop, int *out){
+static int 
+settings_getb(char *prop, int *out, int abort){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
 	setting_entry_t *entry;
@@ -722,15 +722,15 @@ util_settings_getb(char *prop, int *out){
 	}
 	
 	if(r)
-		LOG_DEBUG("Setting %s was accessed as a bool, but setting type is %s", prop, setting_type_names[entry->type]);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s was accessed as a bool, but setting type is %s", prop, setting_type_names[entry->type]);
 	else
-		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s doesn not exist in settings table", prop);
 
 	return -1;
 }
 
-int
-util_settings_getf(char *prop, float *out){
+static int
+settings_getf(char *prop, float *out, int abort){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
 	setting_entry_t *entry;
@@ -741,15 +741,15 @@ util_settings_getf(char *prop, float *out){
 	}
 	
 	if(r)
-		LOG_DEBUG("Setting %s was accessed as a float, but setting type is %s", prop, setting_type_names[entry->type]);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s was accessed as a float, but setting type is %s", prop, setting_type_names[entry->type]);
 	else
-		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s doesn not exist in settings table", prop);
 
 	return -1;
 }
 
-int
-util_settings_gets(char *prop, char** out){
+static int
+settings_gets(char *prop, char** out, int abort){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
 	setting_entry_t *entry;
@@ -760,11 +760,59 @@ util_settings_gets(char *prop, char** out){
 	}
 	
 	if(r)
-		LOG_DEBUG("Setting %s was accessed as a string, but setting type is %s", prop, setting_type_names[entry->type]);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s was accessed as a string, but setting type is %s", prop, setting_type_names[entry->type]);
 	else
-		LOG_DEBUG("Setting %s doesn not exist in settings table", prop);
+		LOG_FATAL_OR_DEBUG(abort, "Setting %s doesn not exist in settings table", prop);
 
 	return -1;
+}
+
+int
+util_settings_geti(char *property, int *out){
+	return settings_geti(property, out, 0);
+}
+
+int
+util_settings_getb(char *property, int *out){
+	return settings_getb(property, out, 0);
+}
+
+int
+util_settings_getf(char *property, float *out){
+	return settings_getf(property, out, 0);
+}
+
+int
+util_settings_gets(char *property, char **out){
+	return settings_gets(property, out, 0);
+}
+
+int
+util_settings_polli(char *property){
+	int out;
+	settings_geti(property, &out, 1);
+	return out;
+}
+
+int
+util_settings_pollb(char *property){
+	int out;
+	settings_getb(property, &out, 1);
+	return out;
+}
+
+float
+util_settings_pollf(char *property){
+	float out;
+	settings_getf(property, &out, 1);
+	return out;
+}
+
+char*
+util_settings_polls(char *property){
+	char *out;
+	settings_gets(property, &out, 1);
+	return out;
 }
 
 void

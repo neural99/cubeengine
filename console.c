@@ -55,6 +55,7 @@ split_on_whitespace(char *p){
 		memset(buff, 0, 2048);
 
 		read_whitespace(&p);
+
 		int i = 0;
 		while(*p != 0 && *p != ' ') 
 			buff[i++] = *p++;
@@ -67,61 +68,126 @@ split_on_whitespace(char *p){
 	return str_list;
 }
 
-static console_command_arg_type_t 
-parse_arg(char *str, void **out_data){
+static console_command_arg_t*
+parse_arg(char *str){
 	int items; 
 
-	float floatval;
-	int intval;
+	console_command_arg_t *arg = malloc(sizeof(console_command_arg_t));
 
-	items = sscanf(str, "%f", &floatval);
+	/* Float */
+	items = sscanf(str, "%f", &arg->floatval);
 	if(items == 1){
-		float *tmp = malloc(sizeof(float));
-		*tmp = floatval;
-		*out_data = tmp;
-		return ARG_FLOAT;
+		arg->type = ARG_FLOAT;
+		return arg;
 	}
 
-	items = sscanf(str, "%d", &intval);
+	/* Integer */
+	items = sscanf(str, "%d", &arg->intval);
 	if(items == 1){
-		int *tmp = malloc(sizeof(int));
-		*tmp = intval;
-		*out_data = tmp;
-		return ARG_INT;
+		arg->type = ARG_INT;
+		return arg;
 	}
 
 	/* Bool */
 	int tru = strcmp(str, "true") == 0 || strcmp(str, "True") == 0;
 	int fal = strcmp(str, "false") == 0 || strcmp(str, "False") == 0;
 	if(tru || fal){
-		int *tmp = malloc(sizeof(int));
-		*tmp = tru ? 1 : 0;
-		*out_data = tmp;
-		return ARG_BOOL;
+		arg->type = ARG_BOOL;
+		return arg;
 	}
 
 	/* String */
-	*out_data = str;
-	return ARG_STRING;
+	arg->strval = malloc(strlen(str) + 1);
+	strcpy(arg->strval, str);
+	arg->type = ARG_STRING;
+	return arg;
+}
+
+static void
+execute_cmd_if_signature_matches(console_command_t *cmd, linked_list_t *args){
+	int len;
+	len = util_list_size(args);
+
+	/* Wrong number of args? */
+	if(len >= MAX_ARGS)
+		FATAL_ERROR("Invocation of command %s failed. Number of args is bigger than MAX_ARGS", cmd->name);
+	if(len != cmd->n_args){
+		LOG_DEBUG("Command %s called with wrong number of arguments. Got %d but %d was expected", cmd->name, len, cmd->n_args); 
+		console_output_line("Wrong number of arguments");
+		return;
+	}
+	
+	/* Check arg types */
+	for(int i = 0; i < len; i++){
+		console_command_arg_t *arg_type;
+	        arg_type = util_list_get(args, i);
+		if(cmd->arg_types[i] != arg_type->type){
+			console_output_line("Wrong cmd signature");
+			return;
+		}
+	}
+
+	/* Invoke command callback */
+	char *res = cmd->execute(args);
+	console_output_line(res);
 }
 
 static int
-execute_cmd(char *name, void**args){
-	linked_list_elm_t *elm;
+maybe_execute_cmd(char *name, linked_list_t *args){
 	int found = 0;
-	elm = console_command_list->head;
-	while(elm != NULL){
-		console_command_t *cmd = elm->data;
+	int len = util_list_size(console_command_list);
+	for(int i = 0; i < len; i++){
+		console_command_t *cmd = util_list_get(console_command_list, i);
+		printf("cmd->name = %s, name = %s\n\n", cmd->name, name);
 		if(strcmp(cmd->name, name) == 0){
-			char * res = cmd->execute(args);
-			console_output_line(res);
+			execute_cmd_if_signature_matches(cmd, args);
 			found = 1;
 			break;
 		}
-		elm = elm->next;
 	}
 	return found;
 }
+
+static void
+arg_free(void *data){
+	console_command_arg_t *arg = data;
+	if(arg->type == ARG_STRING)
+		free(arg->strval);
+	free(arg);
+}
+
+static int 
+parse(char *line){
+	linked_list_t *strs;
+	linked_list_t *args;
+	char *name;
+	char *str;
+	int n_strs; 
+
+	strs = split_on_whitespace(line);
+	n_strs = util_list_size(strs);
+	args = util_list_create();
+
+	/* Abort if line consists of whitespace only */
+	if(n_strs == 0)
+		return 0;
+
+	name = util_list_get(strs, 0);
+	for(int i = 1; i < n_strs ; i++){
+		str = util_list_get(strs, i);
+		console_command_arg_t *arg = parse_arg(str);
+		util_list_add(args, arg);
+	}
+
+	int res = maybe_execute_cmd(name, args);
+
+	free(name);
+	util_list_free_custom(args, arg_free);
+	util_list_free_data(strs);
+
+	return res;
+}
+
 
 static int 
 isempty(void){
@@ -146,6 +212,7 @@ add_char(char ch){
 
 static void
 newline(void){
+	printf("new line %s\n\n\n", console_line_buff);
 	int res = parse(console_line_buff);
 	if(!res){
 		/* Insert into console log if not cmd */
@@ -153,7 +220,6 @@ newline(void){
 		strcpy(curr_line, console_line_buff);
 		util_list_insert(console_text, curr_line);
 	}
-
 	
 	memset(console_line_buff, 0, 2048);
 }
@@ -182,7 +248,7 @@ deactivate_console(void){
 static int 
 keydown_callback(SDL_Event *event){
 	if(console_isactive){
-		if(event->key.keysym.sym == SDLK_F2 || event->key.keysym.sym == SDLK_ESCAPE){
+		if(event->key.keysym.sym == SDLK_ESCAPE){
 			deactivate_console();
 			return 1;
 		}else if(event->key.keysym.sym == SDLK_BACKSPACE){
@@ -191,6 +257,8 @@ keydown_callback(SDL_Event *event){
 		}else if(event->key.keysym.sym == SDLK_RETURN){
 			if(!isempty())
 				newline();
+			else
+				deactivate_console();
 			return 1;
 		}else{
 			if((event->key.keysym.unicode & 0xFF80) == 0){
@@ -202,7 +270,7 @@ keydown_callback(SDL_Event *event){
 			return 1;
 		}
 	}else{
-		if(event->key.keysym.sym == SDLK_F2){
+		if(event->key.keysym.sym == SDLK_RETURN){
 			activate_console();
 			return 1;
 		}

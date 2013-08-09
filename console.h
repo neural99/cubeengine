@@ -16,6 +16,8 @@
 #ifndef __CONSOLE_H__
 #define __CONSOLE_H__
 
+#include "util.h"
+
 #define MAX_ARGS 10
 
 typedef enum {
@@ -26,11 +28,19 @@ typedef enum {
 	ARG_STRING
 } console_command_arg_type_t;
 
+typedef struct console_command_arg_s {
+	console_command_arg_type_t type;
+	int intval;
+	float floatval;
+	char *strval;
+} console_command_arg_t;
+
+/* Console command signature and callback function */
 typedef struct console_command_s {
 	char name[30];
 	int n_args;
 	console_command_arg_type_t arg_types[MAX_ARGS];
-	char* (*execute)(void **args);
+	char* (*execute)(linked_list_t *args);
 } console_command_t;
 
 void console_add_command(console_command_t *cmd);

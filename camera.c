@@ -303,18 +303,22 @@ remove_anim_tasks(void){
 }
 
 static char* 
-pos_print_execute(void **args){
+pos_print_execute(linked_list_t *args){
 	char *out = malloc(200);
 	snprintf(out, 200, "pos:(%f,%f,%f)", camera->eye[0], camera->eye[1], camera->eye[2]);
 	return out;
 }
 
 static char*
-pos_move_execute(void **args){
+pos_move_execute(linked_list_t *args){
 	float x, y, z;
-	x = *((float*)args[0]);
-	y = *((float*)args[1]);
-	z = *((float*)args[1]);
+	console_command_arg_t *arg;
+	arg = util_list_get(args, 0);
+	x = arg->floatval;
+	arg = util_list_get(args, 1);
+	y = arg->floatval;
+	arg = util_list_get(args, 2);
+	z = arg->floatval;
 	
 	camera_move(x, y, z);
 
@@ -326,16 +330,16 @@ pos_move_execute(void **args){
 static void
 add_console_cmds(void){
 	pos_print_cmd = malloc(sizeof(console_command_t));
-	strcpy(pos_print_cmd->name, "pos");
+	strcpy(pos_print_cmd->name, "position");
 	pos_print_cmd->n_args = 0;
 	pos_print_cmd->execute = pos_print_execute;
 	console_add_command(pos_print_cmd);
 
 	pos_move_cmd = malloc(sizeof(console_command_t));
-	strcpy(pos_move_cmd->name, "pos");
+	strcpy(pos_move_cmd->name, "teleport");
 	pos_move_cmd->n_args = 3;
-	memset(pos_move_cmd->arg_types, 0, sizeof(console_command_arg_type_t) * MAX_ARGS);
 	pos_move_cmd->arg_types[0] = ARG_FLOAT; pos_move_cmd->arg_types[1] = ARG_FLOAT; pos_move_cmd->arg_types[2] = ARG_FLOAT;
+	pos_move_cmd->execute = pos_move_execute;
 	console_add_command(pos_move_cmd);
 }
 

@@ -191,11 +191,7 @@ cleanup_event_handlers(void){
 }
 
 void
-draw_hud(void){
-	hud_draw_selection_cube();
-	hud_draw_selection_cross();
-
-	/* draw fps and render info */
+draw_debug_info(void){
  	char buff[100];
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "%u", last_fps);
@@ -203,6 +199,16 @@ draw_hud(void){
 	memset(buff, 0, 100);
 	snprintf(buff, 100, "chunks:%d blocks:%d trigs:%d", chunkmanager_nchunks(), chunkmanager_activeblocks(), chunkmanager_ntrigs());
 	hud_draw_string(5, 550, 12, 16, buff);
+}
+
+void
+draw_hud(void){
+	hud_draw_selection_cube();
+	hud_draw_selection_cross();
+
+	/* draw fps and render info */
+	if(util_settings_pollb("debugmode"))
+		draw_debug_info();
 
 	console_draw();
 }

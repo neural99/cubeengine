@@ -375,6 +375,14 @@ shoot_ray(int *out_x, int *out_y, int *out_z, chunk_t **out_c){
 }
 
 void
+selection_debug_info(int x, int y, int z){
+	char buff[200];
+	memset(buff, 0, 200);
+	snprintf(buff, 200, "x:%d y:%d z:%d", x, y, z);
+	hud_draw_string(5, 520, 12, 16, buff);
+}
+
+void
 hud_draw_selection_cube(void){
 	int x, y, z;
 	chunk_t *c;
@@ -385,13 +393,12 @@ hud_draw_selection_cube(void){
 		hud_selected_block[0] = x;
 		hud_selected_block[1] = y;
 		hud_selected_block[2] = z;
+	
+		renderblock_outline(2*x, 2*y, 2*z);
 
 		/* Draw debug information */
-		char buff[200];
-		memset(buff, 0, 200);
-		snprintf(buff, 200, "x:%d y:%d z:%d", x, y, z);
-		renderblock_outline(2*x, 2*y, 2*z);
-		hud_draw_string(5, 520, 12, 16, buff);
+		if(util_settings_pollb("debugmode"))
+			selection_debug_info(x, y, z);
 	}
 }
 
