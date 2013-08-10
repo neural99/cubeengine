@@ -97,8 +97,9 @@ typedef struct skybox_s {
 	GLuint textureId;
 } skybox_t;
 
-skybox_t *skybox_create(void);
-void skybox_render(skybox_t *sb);
+void skybox_init(void);
+void skybox_render(void);
+void skybox_cleanup(void);
 
 /* Block texture set */
 void textureset_init(void);

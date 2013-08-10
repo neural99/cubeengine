@@ -29,7 +29,6 @@ static int user_pressed_quit;
 static event_handler_t *quit_handler;
 static event_handler_t *mouse_down_handler;
 static Uint32 last_fps = 0;
-static skybox_t *skybox;
 
 void load_world(void);
 
@@ -129,8 +128,6 @@ init_graphics(void){
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
-
-	skybox = skybox_create();
 }
 
 void
@@ -233,7 +230,7 @@ draw_frame(void){
 	chunk_render(chunk1);
 	chunk_render(chunk2);
 	*/
-	skybox_render(skybox);
+	skybox_render();
 	chunkmanager_render_world();
 	//renderblock(0, 0, 5);
 	draw_hud();
@@ -297,7 +294,7 @@ game_loop(void){
 void
 load_world(void){
 	world_file_t *world = malloc(sizeof(world_file_t));
-	world->path = "test.wrl";
+	world->path = "data/test.wrl";
 	if(world_open(world) < 0)
 		FATAL_ERROR("Couldnt open world file");
 	chunkmanager_init(world);

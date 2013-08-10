@@ -107,8 +107,9 @@ static void draw_quad_with_texture(int x, int y, int width, int height, float al
 
 void 
 hud_init(void){
-	font_tileset = hud_load_tileset("font.bmp", 6, 8, 16, 6, 1, 0xFF, 0x00, 0x00, GL_NEAREST);
-	cross_tile = hud_load_single_tile("cross.bmp", 0xff, 0x00, 0xff, GL_NEAREST);
+	/* TODO: Don't hardcore font size */
+	font_tileset = hud_load_tileset(util_settings_polls("hud/font/path"), 6, 8, 16, 6, 1, 0xFF, 0x00, 0x00, GL_NEAREST);
+	cross_tile = hud_load_single_tile(util_settings_polls("hud/cross/path"), 0xff, 0x00, 0xff, GL_NEAREST);
 	hud_selected_block[0] = -1;
 	hud_selected_block[1] = -1;
 	hud_selected_block[2] = -1;

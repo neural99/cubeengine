@@ -2,30 +2,36 @@ CC= gcc
 CFLAGS = -DDEBUG -DWIN32 -Wall -std=c99 -pedantic -Wextra
 LDFLAGS = -lmingw32 -lSDLmain -lSDL -lSDL -lopengl32 -lglu32
 
-C_FILES := main.c event.c camera.c util.c world.c hud.c console.c
-OBJS := main.o event.o camera.o util.o world.o hud.o startup.o console.o
+C_FILES_ := main.c event.c camera.c util.c world.c hud.c console.c
+OBJS_ := main.o event.o camera.o util.o world.o hud.o startup.o console.o
+
+C_FILES := $(addpath src/,$(notdir $(C_FILES_)))
+OBJS := $(addprefix obj/,$(notdir $(OBJS_)))
 
 all: cubeengine heightmap2wrl 
 
 tests: utiltest
 
 cubeengine: $(OBJS) 
-	$(CC) -o $@ $^ glee.lib $(LDFLAGS)
+	$(CC) -o $@ $^ lib/glee.lib $(LDFLAGS)
 
-%.o: %.c
+obj/%.o: src/%.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
 clean: FRC
-	rm -f cubeengine.exe $(OBJS) 
+	rm -f cubeengine.exe  
+	rm -f utiltest.exe
+	rm -f heightmap2wrl.exe
+	rf -f obj/*.o
 
-startup.o: startup.c.template gen_startup.sh $(C_FILES)
+obj/startup.o: src/startup.c.template gen_startup.sh $(C_FILES)
 	bash gen_startup.sh
-	$(CC) $(CFLAGS) -c -o startup.o startup.c
+	$(CC) $(CFLAGS) -c -o obj/startup.o src/startup.c
 
-utiltest: utiltest.c util.c
-	gcc -std=c99 -o utiltest $(LDFLAGS) utiltest.c util.c
+utiltest: src/utiltest.c src/util.c
+	gcc -std=c99 -o utiltest src/utiltest.c src/util.c $(LD_FLAGS) -lm
 
-heightmap2wrl: heightmap2wrl.c
-	gcc -std=c99 -o heightmap2wrl heightmap2wrl.c -lmingw32 -lSDLmain -lSDL
+heightmap2wrl: src/heightmap2wrl.c
+	gcc -std=c99 -o heightmap2wrl src/heightmap2wrl.c -lmingw32 -lSDLmain -lSDL
 
 FRC:

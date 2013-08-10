@@ -1,0 +1,10 @@
+syntax: glob
+obj/*.o
+src/startup.c
+cubeengine
+cubeengine.exe
+heightmap2wrl
+heightmap2wrl.exe
+utiltest
+utiltest.exe
+makefile

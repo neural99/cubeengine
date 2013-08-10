@@ -39,7 +39,10 @@ typedef struct chunkmanager_s {
 
 static chunkmanager_t *chunkmanager = NULL;
 
+static skybox_t *world_skybox;
+
 /* NB: Overwritten by values from settings system */
+/* TODO: Make it read directly from settings system */
 static char *textureset_atlas_path = "block_textures.bmp";
 static int textureset_size = 32;
 static char *textureset_mapping_path = "block_texture_mappings.txt";
@@ -1087,15 +1090,20 @@ load_cubemap(char *dir){
 	return textureId;
 }
 
-skybox_t*
-skybox_create(void){
-	skybox_t *sb = malloc(sizeof(skybox_t));
-	sb->textureId = load_cubemap("skybox");
+void
+skybox_init(void){
+	world_skybox = malloc(sizeof(skybox_t));
+	world_skybox->textureId = load_cubemap(util_settings_polls("skybox/path"));
+}
+STARTUP_PROC(skybox, 7, skybox_init)
 
-	return sb;
+void
+skybox_render(void){
+	renderblock_with_textures(camera->eye[0], camera->eye[1], camera->eye[2], world_skybox->textureId);
 }
 
 void
-skybox_render(skybox_t *sb){
-	renderblock_with_textures(camera->eye[0], camera->eye[1], camera->eye[2], sb->textureId);
+skybox_cleanup(void){
+	glDeleteTextures(1, &world_skybox->textureId);
+	free(world_skybox);
 }

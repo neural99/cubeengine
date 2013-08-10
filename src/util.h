@@ -17,6 +17,7 @@
 #define __UTIL_H__
 
 #include <SDL/SDL.h>
+#include <math.h>
 
 #define PI 3.14159265359
 
