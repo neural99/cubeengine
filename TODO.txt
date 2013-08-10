@@ -1,0 +1,9 @@
++ shutdown/unload modules like startup system
++ more testing/larger worlds
++ fix gameloop/move stuff out of main.c
++ more optimizing
++ fps camera / collision / perfect camera
++ lightning
++ networld
++ ?
++ Profit
