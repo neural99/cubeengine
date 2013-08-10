@@ -174,6 +174,40 @@ util_list_insert(linked_list_t *lst, void *data){
 	lst->head = elm;
 }
 
+int
+util_list_insert_at(linked_list_t *lst, void *data, int ind){
+	linked_list_elm_t *elm, *prev;
+	elm = lst->head;
+	prev = NULL;
+	int i = 0;
+	while(elm != NULL && i < ind){
+		i++;
+		prev = elm;
+		elm = elm->next;
+	}
+
+	if(prev!=NULL)
+	
+	/* Index out of bounds */
+	if(ind != i)
+		return -1;
+
+	linked_list_elm_t *new = malloc(sizeof(linked_list_elm_t));
+	new->data = data;
+	new->next = elm;
+
+	/* Appending */
+	if(elm == NULL)
+		lst->last = new;
+	/* Inserting first */
+	if(prev == NULL)
+		lst->head = new;
+	else
+		prev->next = new;
+
+	return 0;
+}
+
 void*
 util_list_get(linked_list_t *lst, int ind){
 	int i = 0;
@@ -245,6 +279,57 @@ util_list_size(linked_list_t *lst){
 	}
 	return size;
 }	
+
+/*
+static void
+print_list(linked_list_t *n){
+	int len = util_list_size(n);
+	for(int i = 0; i < len; i++){
+		int *a = util_list_get(n, i);
+		printf("%d ", *a);
+	}
+	puts("");
+}
+*/
+
+static void
+insert_at_right_position(linked_list_t *n, void *data, int order, int (*cmp)(void *a, void *b)){
+	int len = util_list_size(n);
+	for(int i = 0; i < len; i++){
+		if(order == LIST_SORT_DEC){
+			if(cmp(data, util_list_get(n, i)) < 0){
+				if(util_list_insert_at(n, data, i) < 0) 
+					FATAL_ERROR("insert_at failed");
+				return;
+			}
+		}else{
+			if(cmp(data, util_list_get(n, i)) > 0){
+				if(util_list_insert_at(n, data, i) < 0)
+					FATAL_ERROR("insert_at failed");
+				return;
+			}
+		}
+	}
+	/* Insert it last */
+	util_list_add(n, data);
+}
+
+/* Simple insertion sort */
+linked_list_t*
+util_list_sort(linked_list_t *lst, int sort_order, int (*cmp)(void *a, void *b)){
+	linked_list_t *new_list = util_list_create();
+
+	int len = util_list_size(lst);
+	for(int i = 0; i < len; i++){
+		void *data = util_list_get(lst, i);
+		insert_at_right_position(new_list, data, sort_order, cmp);
+	}
+
+	/* TODO: This might now always be appropiate */
+	util_list_free(lst);
+
+	return new_list;
+}
 
 void
 crossproduct(double a[3], double b[3], double c[3]){

@@ -18,21 +18,28 @@
 
 static linked_list_t *startup_list = NULL;
 
+int prio_cmp(void *a, void *b){
+	startup_task_t *t1 = a;
+	startup_task_t *t2 = b;
+	if(t1->prio < t2->prio)
+		return 1;
+	if(t1->prio > t2->prio)
+		return -1;
+	else
+		return 0;
+}
+
 void
 run_startup(void){
-	linked_list_elm_t *elm;
-
-	for(int prio = 0; prio < 100; prio++){
-		elm = startup_list->head;
-		while(elm != NULL){
-			startup_task_t *t = elm->data;
-			if(t->prio == prio){
-				LOG_DEBUG("starting up %s with prio %d\n", t->name, t->prio);
-				t->initfunc();
-			}
-			elm = elm->next;
-		}
+	startup_list = util_list_sort(startup_list, LIST_SORT_INC, prio_cmp);
+	int len = util_list_size(startup_list);
+	for(int i = 0; i < len; i++){
+		startup_task_t *t = util_list_get(startup_list, i);
+		LOG_DEBUG("starting up %s with prio %d\n", t->name, t->prio);
+		t->initfunc();
 	}
+
+	util_list_free(startup_list);
 }
 
 void 

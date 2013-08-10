@@ -18,6 +18,17 @@
 
 #include "util.h"
 
+int
+cmp(void *a, void *b){
+	int *i1 = a; int *i2 = b;
+	if(*i1 < *i2)
+		return 1;
+	if(*i1 > *i2)
+		return -1;
+	else
+		return 0;
+}
+
 int 
 main(int argc, char *argv[]){
 	int buf[100];
@@ -26,7 +37,7 @@ main(int argc, char *argv[]){
 	lst = util_list_create();
 
 	for (int i = 0; i < 100; i++){
-		buf[i] = i;
+		buf[i] = rand();
 
 		util_list_add(lst, &buf[i]);
 	}
@@ -56,6 +67,15 @@ main(int argc, char *argv[]){
 	}
 
 	puts("");
+
+	lst = util_list_sort(lst, LIST_SORT_DEC, cmp);
+
+	elm = lst->head;
+	while(elm != NULL){
+		int* d = elm->data;
+		printf("%d ", *d);
+		elm = elm->next;
+	}
 
 	util_list_free(lst);
 

@@ -7,3 +7,5 @@ heightmap2wrl.exe
 utiltest
 utiltest.exe
 makefile
+*~
+stdout.txt

@@ -47,15 +47,22 @@ typedef struct linked_list_s {
 	linked_list_elm_t *last;
 } linked_list_t;
 
+enum {
+	LIST_SORT_INC,
+	LIST_SORT_DEC
+}; 
+
 linked_list_t *util_list_create(void);
 void util_list_free(linked_list_t* l);
 void util_list_free_data(linked_list_t* l);
 void util_list_free_custom(linked_list_t *l, void (*freefunc)(void*));
 void util_list_add(linked_list_t* lst, void *data); /* Append */
 void util_list_insert(linked_list_t* lst, void *data); /* Insert first */
+int util_list_insert_at(linked_list_t* lst, void *data, int ind); 
 void* util_list_get(linked_list_t* lst, int ind);
 int util_list_remove(linked_list_t* lst, void *data);
 int util_list_size(linked_list_t *lst);
+linked_list_t* util_list_sort(linked_list_t *l, int sort_order, int (*cmp)(void *a, void *b));
 
 /* Math */
 void crossproduct(double a[3], double b[3], double c[3]); 

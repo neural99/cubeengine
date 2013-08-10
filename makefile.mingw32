@@ -29,7 +29,7 @@ obj/startup.o: src/startup.c.template gen_startup.sh $(C_FILES)
 	$(CC) $(CFLAGS) -c -o obj/startup.o src/startup.c
 
 utiltest: src/utiltest.c src/util.c
-	gcc -std=c99 -o utiltest src/utiltest.c src/util.c $(LD_FLAGS) -lm
+	gcc -std=c99 -o utiltest src/utiltest.c src/util.c -lmingw32 -lSDLmain -lSDL
 
 heightmap2wrl: src/heightmap2wrl.c
 	gcc -std=c99 -o heightmap2wrl src/heightmap2wrl.c -lmingw32 -lSDLmain -lSDL
