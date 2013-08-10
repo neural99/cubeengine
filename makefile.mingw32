@@ -22,7 +22,7 @@ clean: FRC
 	rm -f cubeengine.exe  
 	rm -f utiltest.exe
 	rm -f heightmap2wrl.exe
-	rf -f obj/*.o
+	rm -f obj/*.o
 
 obj/startup.o: src/startup.c.template gen_startup.sh $(C_FILES)
 	bash gen_startup.sh
