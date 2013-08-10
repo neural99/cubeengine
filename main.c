@@ -13,8 +13,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-#include <SDL/sdl.h>
-#include <GL/glee.h>
+#include <SDL/SDL.h>
+#include <GLee.h>
 #include <stdio.h>
 
 #include "hud.h"

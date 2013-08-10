@@ -15,8 +15,8 @@
 
 #include <string.h>
 #include <math.h>
-#include <SDL/sdl.h>
-#include <GL/glee.h>
+#include <SDL/SDL.h>
+#include <GLee.h>
 
 #include "util.h"
 #include "world.h"

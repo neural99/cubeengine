@@ -616,14 +616,7 @@ util_settings_load_file(char *inifile){
 	if(settings_table == NULL)
 		settings_table = util_hashtable_create(SETTINGS_TABLE_SIZE);
 
-#ifdef WIN32
-	char path[MAX_PATH];
-	ExpandEnvironmentStrings(inifile, path, MAX_PATH);
-#else
-	char *path = inifile;
-#endif
-
-	FILE *f = fopen(path, "r");
+	FILE *f = fopen(inifile, "r");
 	if(f == NULL)
 		return -1;
 	int lines = 0;
@@ -643,7 +636,7 @@ util_settings_load_file(char *inifile){
 		while(*a != '=' && *a != 0) 
 			*b++ = *a++;
 		if(*a == 0)
-			FATAL_ERROR("Error parsing inifile %s near line %d. End of line reached before '=' was found", path, lines+1);
+			FATAL_ERROR("Error parsing inifile %s near line %d. End of line reached before '=' was found", inifile, lines+1);
 		*b++ = 0;
 		str = a + 1;
 
@@ -820,9 +813,24 @@ util_settings_load_default_files(void){
 	if(util_settings_load_file("defaults.ini") < 0)
 		FATAL_ERROR("Could not load defaults settings from defaults.ini");
 
-	/* TODO: Load ini file from users home dir on *nix */
+	/* TODO: Cleanup this mess */
 #ifdef WIN32
-	if(util_settings_load_file("%APPDATA%/cubeengine/settings.ini") < 0)
+	char path[MAX_PATH];
+	char *inifile = "%APPDATA%/cubeengine/settings.ini";
+	ExpandEnvironmentStrings(inifile, path, MAX_PATH);
+
+	if(util_settings_load_file(path) < 0)
+		LOG_WARN("Could not read settings from user settings file");
+#else
+	char path[2048];
+	char *inifile = "/.cubeengine/settings.ini";
+	char *home = getenv("HOME");
+	if(home == NULL)
+		FATAL_ERROR("Environent variable HOME is not set. Aborting.");
+	strcpy(path, home);
+	strcat(path, inifile);
+
+	if(util_settings_load_file(path) < 0)
 		LOG_WARN("Could not read settings from user settings file");
 #endif
 

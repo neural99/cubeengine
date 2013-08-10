@@ -13,7 +13,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-#include <SDL/sdl.h>
+#include <SDL/SDL.h>
 #include "console.h"
 #include "event.h"
 #include "util.h"
@@ -212,7 +212,7 @@ add_char(char ch){
 
 static void
 newline(void){
-	printf("new line %s\n\n\n", console_line_buff);
+	LOG_DEBUG("new line %s\n\n\n", console_line_buff);
 	int res = parse(console_line_buff);
 	if(!res){
 		/* Insert into console log if not cmd */

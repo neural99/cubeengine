@@ -16,7 +16,7 @@
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
-#include <SDL/sdl.h>
+#include <SDL/SDL.h>
 
 #define PI 3.14159265359
 

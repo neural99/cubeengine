@@ -16,8 +16,8 @@
 #ifndef __WORLD_H__
 #define __WORLD_H__
 
-#include <SDL/sdl.h>
-#include <GL/glee.h>
+#include <SDL/SDL.h>
+#include <GLee.h>
 
 #include "util.h"
 

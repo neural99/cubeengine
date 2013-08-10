@@ -16,7 +16,7 @@
 #ifndef __EVENT_H__
 #define __EVENT_H__
 
-#include <SDL/sdl.h>
+#include <SDL/SDL.h>
 #include "startup.h"
 
 typedef struct event_handler_s {

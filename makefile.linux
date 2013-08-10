@@ -1,0 +1,31 @@
+CC= gcc
+CFLAGS = -DDEBUG -Wall -std=c99 -pedantic -Wextra
+LDFLAGS = -lglee -lGLU -lSDLmain -lSDL -lGL
+
+C_FILES := main.c event.c camera.c util.c world.c hud.c console.c
+OBJS := main.o event.o camera.o util.o world.o hud.o startup.o console.o
+
+all: cubeengine heightmap2wrl 
+
+tests: utiltest
+
+cubeengine: $(OBJS) 
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $< 
+
+clean: FRC
+	rm -f cubeengine.exe $(OBJS) 
+
+startup.o: startup.c.template gen_startup.sh $(C_FILES)
+	bash gen_startup.sh
+	$(CC) $(CFLAGS) -c -o startup.o startup.c
+
+utiltest: utiltest.c util.c
+	gcc -std=c99 -o utiltest $(LDFLAGS) utiltest.c util.c
+
+heightmap2wrl: heightmap2wrl.c
+	gcc -std=c99 -o heightmap2wrl heightmap2wrl.c -lSDLmain -lSDL
+
+FRC:

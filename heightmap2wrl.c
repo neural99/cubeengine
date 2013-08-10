@@ -13,7 +13,7 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>. 
  */
 
-#include <SDL/sdl.h>
+#include <SDL/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 
