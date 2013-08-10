@@ -1,0 +1,6 @@
+Yet another free Infiminer/Minecraft clone.
+
+Currently in early stages of development. 
+Written in C and uses OpenGL and SDL for graphics.
+SDL_net is planned for the net code but multiplayer is 
+yet to be implmened.
