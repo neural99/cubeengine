@@ -1,7 +1,7 @@
-+ shutdown/unload modules like startup system
 + more testing/larger worlds
++ more optimizing to handle larger worlds
++ shutdown/unload modules like startup system
 + fix gameloop/move stuff out of main.c
-+ more optimizing
 + fps camera / collision / perfect camera
 + lightning
 + networld
