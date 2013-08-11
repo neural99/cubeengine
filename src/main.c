@@ -294,7 +294,7 @@ game_loop(void){
 void
 load_world(void){
 	world_file_t *world = malloc(sizeof(world_file_t));
-	world->path = "data/test.wrl";
+	world->path = "data/big.wrl";
 	if(world_open(world) < 0)
 		FATAL_ERROR("Couldnt open world file");
 	chunkmanager_init(world);

@@ -1,1 +1,6 @@
-0 1 1 1 1 1 1
+; dirth with grass top
+0 2 2 3 0 2 2
+; dirt
+1 0 0 0 0 0 0
+; cobblestone
+2 1 1 1 1 1 1

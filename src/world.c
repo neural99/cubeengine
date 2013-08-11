@@ -92,6 +92,10 @@ load_block_type_mappings(char *path){
 		if(r == NULL)
 			break;
 
+		/* Comments */
+		if(r[0] == ';')
+			continue;
+
 		int items = sscanf(buff, "%d %d %d %d %d %d %d", (int*)&block_type, (int*)&front, (int*)&back,
 								(int*)&top, (int*)&bottom, (int*)&left, (int*)&right);
 		if(items =! 7)
@@ -191,21 +195,54 @@ textureset_texcoords(Uint32 block_type, int face, int vert){
 
 	GLfloat *uv = malloc(sizeof(GLfloat) * 2);
 
-	/* Counting CCW from (0,0) */
-	if(vert == 0){
-		uv[0] =  x / (float)textureset_current.atlas_w;
-	        uv[1] =	 y / (float)textureset_current.atlas_h; 
-	}else if(vert == 1){
-		uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
-	        uv[1] =	 y / (float)textureset_current.atlas_h; 
-	}else if(vert == 2){
-		uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
-	        uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
-	}else if(vert == 3){
-		uv[0] =  x / (float)textureset_current.atlas_w;
-	        uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+	if(face == 0 || face == 1){
+		if(vert == 0){
+			uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+			uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+		}else if(vert == 1){
+			uv[0] =  x / (float)textureset_current.atlas_w;
+			uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+		}else if(vert == 2){
+			uv[0] =  x / (float)textureset_current.atlas_w;
+			uv[1] =	 y / (float)textureset_current.atlas_h; 
+		}else if(vert == 3){
+			uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+			uv[1] =	 y / (float)textureset_current.atlas_h; 
+		}else{
+			FATAL_ERROR("Invalid input to function. Should not happend.");
+		}
+	}else if(face == 5 || face == 4){
+		if(vert == 0){
+			uv[0] =  x / (float)textureset_current.atlas_w;
+			uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+		}else if(vert == 1){
+			uv[0] =  x / (float)textureset_current.atlas_w;
+			uv[1] =	 y / (float)textureset_current.atlas_h; 
+		}else if(vert == 2){
+			uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+			uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+		}else if(vert == 3){
+			uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+			uv[1] =	 y / (float)textureset_current.atlas_h; 
+		}else{
+			FATAL_ERROR("Invalid input to function. Should not happend.");
+		}
 	}else{
-		FATAL_ERROR("Invalid input to function. Should not happend.");
+		if(vert == 0){
+			uv[0] =  x / (float)textureset_current.atlas_w;
+			uv[1] =	 y / (float)textureset_current.atlas_h; 
+		}else if(vert == 1){
+			uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+			uv[1] =	 y / (float)textureset_current.atlas_h; 
+		}else if(vert == 2){
+			uv[0] =  (x + textureset_size) / (float)textureset_current.atlas_w;
+			uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+		}else if(vert == 3){
+			uv[0] =  x / (float)textureset_current.atlas_w;
+			uv[1] =	 (y + textureset_size) / (float)textureset_current.atlas_h; 
+		}else{
+			FATAL_ERROR("Invalid input to function. Should not happend.");
+		}
 	}
 	
 	//printf("u=%f,v=%f\n", uv[0],uv[1]);
