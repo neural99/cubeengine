@@ -1,8 +1,9 @@
-+ more testing/larger worlds
++ fix event
++ fix camera
 + more optimizing to handle larger worlds
 + shutdown/unload modules like startup system
 + fix gameloop/move stuff out of main.c
-+ fps camera / collision / perfect camera
++ fps camera / collision 
 + lightning
 + networld
 + ?
