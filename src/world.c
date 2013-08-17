@@ -1027,11 +1027,13 @@ update_render_list(void){
 	util_list_free(chunkmanager->render_chunks);
 	chunkmanager->render_chunks = util_list_create();
 
-	int len = util_list_size(chunkmanager->visible_chunks);
-	for (int i = 0; i < len; i++) {
-		chunk_t *c = util_list_get(chunkmanager->visible_chunks, i);
+	linked_list_elm_t *elm;
+	elm = chunkmanager->visible_chunks->head;
+	while(elm != NULL){
+		chunk_t *c = elm->data;
 		if(should_chunk_be_rendered(c))
 			util_list_add(chunkmanager->render_chunks, c);	
+		elm = elm->next;
 	}
 }
 
