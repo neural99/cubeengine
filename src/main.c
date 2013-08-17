@@ -128,6 +128,16 @@ init_graphics(void){
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 	glEnable(GL_CULL_FACE);
+
+	GLfloat fogColor[4] = { 0.4, 0.4, 0.4, 1.0 };
+	GLfloat density = 0.3;
+
+	glFogi(GL_FOG_MODE, GL_LINEAR);
+	glFogfv(GL_FOG_COLOR, fogColor);
+	glFogf(GL_FOG_START, 70.0f);			
+	glFogf(GL_FOG_END, 100.0f);
+	glFogf(GL_FOG_DENSITY, density);
+	glEnable(GL_FOG);
 }
 
 void

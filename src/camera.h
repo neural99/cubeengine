@@ -18,6 +18,7 @@
 
 #define NEAR_PLANE 0.1
 #define FAR_PLANE 1000.0
+#define CAMERA_RADIUS 100
 
 typedef struct camera_s {
 	double eye[3];

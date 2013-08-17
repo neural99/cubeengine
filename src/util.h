@@ -59,7 +59,7 @@ void util_list_free_custom(linked_list_t *l, void (*freefunc)(void*));
 void util_list_add(linked_list_t* lst, void *data); /* Append */
 void util_list_insert(linked_list_t* lst, void *data); /* Insert first */
 int util_list_insert_at(linked_list_t* lst, void *data, int ind); 
-void* util_list_get(linked_list_t* lst, int ind);
+void* util_list_get(linked_list_t* lst, int ind); /* NB: Don't use this if performance is important */
 int util_list_remove(linked_list_t* lst, void *data);
 int util_list_size(linked_list_t *lst);
 linked_list_t* util_list_sort(linked_list_t *l, int sort_order, int (*cmp)(void *a, void *b));
@@ -72,6 +72,7 @@ void rotatearoundYaxis(double v[3], double radians);
 void rotatearoundXaxis(double v[3], double radians);
 void rotatearoundZaxis(double v[3], double radians);
 void vec_diff(double res[3], double a[3], double b[3]);
+void vec_cpy(double d[3], double s[3]);
 
 typedef struct quaternion_s {
 	double x, y, z, w;

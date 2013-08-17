@@ -500,6 +500,12 @@ vec_diff(double res[3], double a[3], double b[3]){
 	res[2] = a[2] - b[2];
 }
 
+void
+vec_cpy(double d[3], double s[3]){
+	d[0] = s[0];
+	d[1] = s[1];
+	d[2] = s[2];
+}
 
 /* Java's method of calculating String hashes */
 static unsigned int

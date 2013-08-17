@@ -28,6 +28,7 @@
 #define BLOCK_WIDTH 500.0f
 
 typedef struct chunkmanager_s {
+	linked_list_t *visible_chunks;
 	linked_list_t *render_chunks;
 	linked_list_t *loaded_chunks;
 
@@ -392,6 +393,8 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 	glEnable(GL_TEXTURE_CUBE_MAP);
 	glDisable(GL_CULL_FACE);
 
+	glDisable(GL_FOG);
+
 	float N = 1.0f / sqrt(3.0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
 	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -436,6 +439,8 @@ renderblock_with_textures(int x, int y, int z, GLuint texture){
 	glDisable(GL_TEXTURE_CUBE_MAP);
 	glEnable(GL_CULL_FACE);
 	glDepthMask(GL_TRUE);
+
+	glEnable(GL_FOG);
 
 	glPopMatrix();
 }	
@@ -947,6 +952,7 @@ chunkmanager_get_chunk(int ix, int iy, int iz){
 void
 chunkmanager_init(world_file_t *world){
 	chunkmanager = malloc(sizeof(chunkmanager_t));
+	chunkmanager->visible_chunks = util_list_create();
 	chunkmanager->render_chunks = util_list_create();
 	chunkmanager->loaded_chunks = util_list_create();
 	chunkmanager->active_blocks = 0;
@@ -1017,17 +1023,39 @@ should_chunk_be_rendered(chunk_t *c){
 
 static void
 update_render_list(void){
-	linked_list_elm_t *elm;
-
 	/* Nuke render list */
 	util_list_free(chunkmanager->render_chunks);
 	chunkmanager->render_chunks = util_list_create();
 
+	int len = util_list_size(chunkmanager->visible_chunks);
+	for (int i = 0; i < len; i++) {
+		chunk_t *c = util_list_get(chunkmanager->visible_chunks, i);
+		if(should_chunk_be_rendered(c))
+			util_list_add(chunkmanager->render_chunks, c);	
+	}
+}
+
+static int 
+inside_camera_radius(double pos[3]) {
+	double diff[3];
+	diff[0] = pos[0] - camera->eye[0];
+	diff[1] = pos[1] - camera->eye[1];
+	diff[2] = pos[2] - camera->eye[2];
+	return length(diff) < CAMERA_RADIUS;
+}
+
+static void
+update_visible_list(void) {
+	util_list_free(chunkmanager->visible_chunks);
+	chunkmanager->visible_chunks = util_list_create();
+
+	
+	linked_list_elm_t *elm;
 	elm = chunkmanager->loaded_chunks->head;
 	while(elm != NULL){
 		chunk_t *c = elm->data;
-		if(should_chunk_be_rendered(c))
-			util_list_add(chunkmanager->render_chunks, c);	
+		if(inside_camera_radius(c->pos)) 
+			util_list_add(chunkmanager->visible_chunks, c);
 		elm = elm->next;
 	}
 }
@@ -1044,8 +1072,32 @@ write_modified(void){
 	}
 }
 
+int 
+has_camera_moved(void) {
+	static int first = 1;
+	static double oldeye[3] = { 0 };
+
+	if(first){
+		first = 0;
+		vec_cpy(oldeye, camera->eye);
+		return 1;
+	}
+
+	/* Same position? */
+	if(oldeye[0] == camera->eye[0] &&
+	    oldeye[1] == camera->eye[1] &&
+	    oldeye[2] == camera->eye[2]){
+		return 0;
+	}else{
+		vec_cpy(oldeye, camera->eye);
+		return 1;
+	}
+}
+
 void
 chunkmanager_update(void){
+	if(has_camera_moved())
+		update_visible_list();
 	update_render_list();
 	write_modified();
 }
