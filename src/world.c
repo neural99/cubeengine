@@ -995,12 +995,51 @@ chunkmanager_render_world(void){
 	}
 }
 
-static int
-should_chunk_be_rendered(chunk_t *c){
-	/* Don't render emtpy chunks */
-	if(c->active_blocks == 0)
-		return 0;
+/* Check if the point p is behind the plane spanned by y-axis and camera->right */
+static int 
+is_point_behind_camera(double p[3]){
+	double diff[3];
+	double forward_v[3];
+	diff[0] = p[0] - camera->eye[0];
+	diff[1] = p[1] - camera->eye[1];
+	diff[2] = p[2] - camera->eye[2];
+	forward_v[0] = camera->forward.x;
+	forward_v[1] = camera->forward.y;
+	forward_v[2] = camera->forward.z;
 
+	/* Project diff and forward_v onto xz-plane */
+	diff[1] = 0;
+	forward_v[1] = 0;
+
+	double d = dotproduct(forward_v, diff);
+
+	return d < 0;
+}
+
+static int
+is_chunk_behind_camera(chunk_t *chunk){
+	double point[3];
+
+	for(int i = 0; i < 6; i++){
+		int num = i;
+		int a = num % 2; num /= 2;
+		int b = num % 2; num /= 2;
+		int c = num % 2;
+		point[0] = chunk->pos[0] + a * 2 * CHUNK_SIZE;
+		point[1] = chunk->pos[1] + b * 2 * CHUNK_SIZE;
+		point[2] = chunk->pos[2] + c * 2 * CHUNK_SIZE;
+
+		/* One vertex is in front of the camera */
+		if(!is_point_behind_camera(point))
+			return 0;
+	}
+
+	/* All verticies are behind the camera */
+	return 1;
+}
+
+static int
+is_chunk_surrounded(chunk_t *c){
 	chunk_t *front = chunkmanager_get_chunk(c->ix, c->iy, c->iz+1);
 	chunk_t *back = chunkmanager_get_chunk(c->ix, c->iy, c->iz-1);
 	chunk_t *top = chunkmanager_get_chunk(c->ix, c->iy+1, c->iz);
@@ -1016,9 +1055,18 @@ should_chunk_be_rendered(chunk_t *c){
 		left  != NULL &&  left->active_blocks == MAX_ACTIVE_BLOCKS &&
 		right != NULL && right->active_blocks == MAX_ACTIVE_BLOCKS; 
 	if(s)
+		return 1;
+
+	return 0;
+}
+
+static int
+should_chunk_be_rendered(chunk_t *c){
+	/* Don't render emtpy chunks */
+	if(c->active_blocks == 0)
 		return 0;
 
-	return 1;
+	return !is_chunk_surrounded(c) && !is_chunk_behind_camera(c);
 }
 
 static void

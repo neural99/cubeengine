@@ -117,7 +117,7 @@ handle_keypress_handlers(SDL_Event *e){
 	} else if (e->type == SDL_KEYUP){
 		keypress_handler_t *h;
 		h = keypress_handler(e);
-		if(h != NULL && h->timer != 0)
+		if(h != NULL)
 			remove_keypress_timer(h);
 
 	}
@@ -135,23 +135,16 @@ timer_callback(Uint32 interval, void *param){
 static keypress_handler_t*
 keypress_handler(SDL_Event *e){
 	linked_list_elm_t *elm;
-	linked_list_elm_t *matched;
 
-	matched = NULL;
 	elm = keypress_handler_list->head;
 	while(elm != NULL){
 		keypress_handler_t *handler;
 		handler = elm->data;
-		if (handler->sym == e->key.keysym.sym){
-			matched = elm;
-			break;
-		}
+		if(handler->sym == e->key.keysym.sym)
+			return handler;
 		elm = elm->next;
 	}
-	if(matched)
-		return matched->data;
-	else
-		return NULL;
+	return NULL;
 }
 
 static void
@@ -159,15 +152,17 @@ add_keypress_timer(keypress_handler_t *h, SDL_Event *e){
 	SDL_Event *e_cpy;
 	e_cpy = malloc(sizeof(SDL_Event));
 	memcpy(e_cpy, e, sizeof(SDL_Event));
-	h->timer = SDL_AddTimer(h->repeat_interval, timer_callback, e_cpy);
 	h->repeated_event = e_cpy;
+	h->timer = SDL_AddTimer(h->repeat_interval, timer_callback, e_cpy);
 }	
 
 static void
 remove_keypress_timer(keypress_handler_t *h){
 	SDL_RemoveTimer(h->timer);
 	h->timer = 0;
-	free(h->repeated_event);
+	if(h->repeated_event)
+		free(h->repeated_event);
+	h->repeated_event = NULL;
 }
 
 

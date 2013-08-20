@@ -66,6 +66,7 @@ linked_list_t* util_list_sort(linked_list_t *l, int sort_order, int (*cmp)(void 
 
 /* Math */
 void crossproduct(double a[3], double b[3], double c[3]); 
+double dotproduct(double a[3], double b[3]);
 double length(double v[3]);
 void normalize(double v[3]);
 void rotatearoundYaxis(double v[3], double radians);
