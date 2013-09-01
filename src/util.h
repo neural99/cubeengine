@@ -88,6 +88,8 @@ void quad_conjugate(quaternion_t *q);
 void quad_rotate(quaternion_t* q, double angle, quaternion_t *axis);
 void quad_applyrotation(quaternion_t *res, quaternion_t *rot);
 double quad_diff(quaternion_t *q1, quaternion_t *q2);
+void quad_cpyvec(double v[3], quaternion_t *q);
+void quad_fromvec(quaternion_t *q, double v[3]);
 
 /* FPS independent Animation */
 typedef struct anim_task_s {

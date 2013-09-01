@@ -470,6 +470,21 @@ quad_diff(quaternion_t *q1, quaternion_t *q2){
 }
 
 void
+quad_cpyvec(double v[3], quaternion_t *q) {
+	v[0] = q->x;
+	v[1] = q->y;
+	v[2] = q->z;
+}
+
+void
+quad_fromvec(quaternion_t *q, double v[3]) {
+	q->x = v[0];
+	q->y = v[1];
+	q->z = v[2];
+	q->w = 1;
+}
+
+void
 quad_normalize(quaternion_t *q){
 	int len = quad_length(q);
 	if(len != 0){

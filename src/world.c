@@ -1036,37 +1036,61 @@ is_point_outside_frustrum(double p[3]){
 	int fov = 60;
 
 	double forward_v[3];
+	double up_v[3];
 	double left_v[3];
 	double right_v[3];
+	double rot_axis_v[3];
+	quaternion_t left;
+	quaternion_t right;
+	quaternion_t rot1;
+	quaternion_t rot2;
+	quaternion_t rot_axis;
 
-	/* Copy */
-	forward_v[0] = camera->forward.x;
-	forward_v[1] = camera->forward.y;
-	forward_v[2] = camera->forward.z;
+	/* Convert quaternion to vectors */
+	quad_cpyvec(forward_v, &camera->forward);
+	quad_cpyvec(up_v, &camera->up);
 
-	vec_cpy(left_v, forward_v);
-	vec_cpy(right_v, forward_v);
+	/* Rotate around camera up axis */
+	quad_fromvec(&rot_axis, up_v);
 
-	/* left_v and right_v represent the outer boundaries of the viewing frustrum */
-	rotatearoundYaxis(left_v, -deg2radians(fov/2 + 5));
-	rotatearoundYaxis(right_v, deg2radians(fov/2 + 5));
+	/* left and right represent the outer boundaries of the viewing frustrum */
+	left = camera->forward;
+	right = camera->forward;
+
+	quad_rotate(&rot1, -deg2radians(fov / 2 + 5), &rot_axis);
+	quad_rotate(&rot2, deg2radians(fov / 2 + 5), &rot_axis);
+
+	quad_applyrotation(&left, &rot1);
+	quad_applyrotation(&right, &rot2);
 
 	/* Project onto xz-plane */
-	left_v[1]  = 0;
-	right_v[1] = 0;
+	left.y  = 0;
+	right.y = 0;
+
+	/* Convert to vectors */
+	quad_cpyvec(left_v, &left);
+	quad_cpyvec(right_v, &right);
 
 	vec_add(left_v, camera->eye);
 	vec_add(right_v, camera->eye);
 
 	return is_point_left_of_line(camera->eye, left_v, p) || is_point_right_of_line(camera->eye, right_v, p);
+}
 
-	//printf("forward=(%f %f), left=(%f %f %f), right=(%f %f %f)\n", forward_v[0], forward_v[2], left_v[0], left_v[1], left_v[2],
-//							right_v[0], right_v[1], right_v[2]);
+static int
+is_chunk_close_to_camera(chunk_t *chunk){
+	double diff[3];
+	vec_diff(diff, chunk->pos, camera->eye);
+	return length(diff) < (2 * CHUNK_SIZE + 5);
 }
 
 /* Perform 2d frustrum culling */
 static int
 is_chunk_outside_2d_frustrum(chunk_t *chunk){
+	/* Don't cull away chunks very close to the camera */
+	if(is_chunk_close_to_camera(chunk))
+		return 0;
+
 	double point[3];
 	/* Enumerate all corners of the chunk */
 	for(int i = 0; i < 6; i++){
