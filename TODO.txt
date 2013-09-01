@@ -1,5 +1,6 @@
-+ octress (front to back rendering)
-+ increase chunk drawing distance
++ fix degrading performance
++ decrease memory usage
++ front to back rendering
 + fix event
 + fix camera
 + more optimizing to handle larger worlds

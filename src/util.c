@@ -357,25 +357,41 @@ normalize(double v[3]){
 	v[2] /= len;
 }
 
+void 
+vec_add(double u[3], double v[3]){
+	u[0] += v[0];
+	u[1] += v[1];
+	u[2] += v[2];
+}
+
 void
 rotatearoundYaxis(double v[3], double radians){
-	v[0] = v[0] * cos(radians) + v[2] * sin(radians);
-	v[1] = v[1];
-	v[2] = -v[0] * sin(radians) + v[2] * cos(radians);
+	double tmp[3];
+	memcpy(tmp, v, 3 * sizeof(double));
+
+	v[0] = tmp[0] * cos(radians) + tmp[2] * sin(radians);
+	v[1] = tmp[1];
+	v[2] = -tmp[0] * sin(radians) + tmp[2] * cos(radians);
 }
 
 void
 rotatearoundXaxis(double v[3], double radians){
-	v[0] = v[0];
-	v[1] = v[1] * cos(radians)  - v[2] * sin(radians);
-	v[2] = v[1] * sin(radians)  + v[2] * cos(radians);
+	double tmp[3];
+	memcpy(tmp, v, 3 * sizeof(double));
+
+	v[0] = tmp[0];
+	v[1] = tmp[1] * cos(radians)  - tmp[2] * sin(radians);
+	v[2] = tmp[1] * sin(radians)  + tmp[2] * cos(radians);
 }
 
 void
 rotatearoundZaxis(double v[3], double radians){
-	v[0] = v[0] * cos(radians) - v[1] * sin(radians);
-	v[1] = v[0] * sin(radians) + v[1] * cos(radians);
-	v[2] = v[2];
+	double tmp[3];
+	memcpy(tmp, v, 3 * sizeof(double));
+
+	v[0] = tmp[0] * cos(radians) - tmp[1] * sin(radians);
+	v[1] = tmp[0] * sin(radians) + tmp[1] * cos(radians);
+	v[2] = tmp[2];
 }
 
 void
@@ -510,6 +526,11 @@ vec_cpy(double d[3], double s[3]){
 	d[0] = s[0];
 	d[1] = s[1];
 	d[2] = s[2];
+}
+
+double
+deg2radians(double deg){
+	return deg * PI / 180;
 }
 
 /* Java's method of calculating String hashes */

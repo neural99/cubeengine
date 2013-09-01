@@ -74,6 +74,8 @@ void rotatearoundXaxis(double v[3], double radians);
 void rotatearoundZaxis(double v[3], double radians);
 void vec_diff(double res[3], double a[3], double b[3]);
 void vec_cpy(double d[3], double s[3]);
+void vec_add(double u[3], double v[3]);
+double deg2radians(double deg);
 
 typedef struct quaternion_s {
 	double x, y, z, w;

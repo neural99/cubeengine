@@ -1016,10 +1016,82 @@ is_point_behind_camera(double p[3]){
 	return d < 0;
 }
 
+/* Computes the determinate 
+ * | x2-x1 x3-x1 |
+ * | y2-y1 y3-y1 |
+ * to determine which side ot the line (a, b) the point p is on */
+static int 
+is_point_left_of_line(double a[3], double b[3], double p[3]){
+	return ((b[0] - a[0]) * (p[2] - a[2])) - ((b[2] - a[2]) * (p[0] - a[0])) > 0;
+}
+
+static int 
+is_point_right_of_line(double a[3], double b[3], double p[3]){
+	return ((b[0] - a[0]) * (p[2] - a[2])) - ((b[2] - a[2]) * (p[0] - a[0])) < 0;
+}
+
+static int 
+is_point_outside_frustrum(double p[3]){
+	/* TODO: Move this to settings */
+	int fov = 60;
+
+	double forward_v[3];
+	double left_v[3];
+	double right_v[3];
+
+	/* Copy */
+	forward_v[0] = camera->forward.x;
+	forward_v[1] = camera->forward.y;
+	forward_v[2] = camera->forward.z;
+
+	vec_cpy(left_v, forward_v);
+	vec_cpy(right_v, forward_v);
+
+	/* left_v and right_v represent the outer boundaries of the viewing frustrum */
+	rotatearoundYaxis(left_v, -deg2radians(fov/2 + 5));
+	rotatearoundYaxis(right_v, deg2radians(fov/2 + 5));
+
+	/* Project onto xz-plane */
+	left_v[1]  = 0;
+	right_v[1] = 0;
+
+	vec_add(left_v, camera->eye);
+	vec_add(right_v, camera->eye);
+
+	return is_point_left_of_line(camera->eye, left_v, p) || is_point_right_of_line(camera->eye, right_v, p);
+
+	//printf("forward=(%f %f), left=(%f %f %f), right=(%f %f %f)\n", forward_v[0], forward_v[2], left_v[0], left_v[1], left_v[2],
+//							right_v[0], right_v[1], right_v[2]);
+}
+
+/* Perform 2d frustrum culling */
+static int
+is_chunk_outside_2d_frustrum(chunk_t *chunk){
+	double point[3];
+	/* Enumerate all corners of the chunk */
+	for(int i = 0; i < 6; i++){
+		int num = i;
+		int a = num % 2; num /= 2;
+		int b = num % 2; num /= 2;
+		int c = num % 2;
+		point[0] = chunk->pos[0] + a * 2 * CHUNK_SIZE;
+		point[1] = chunk->pos[1] + b * 2 * CHUNK_SIZE;
+		point[2] = chunk->pos[2] + c * 2 * CHUNK_SIZE;
+
+		/* One vertex is inside the frustrum */
+		if(!is_point_outside_frustrum(point))
+			return 0;
+	}
+
+	/* All verticies are outside the frustrum */
+	return 1;
+}
+
 static int
 is_chunk_behind_camera(chunk_t *chunk){
 	double point[3];
 
+	/* Enumerate all corners of the chunk */
 	for(int i = 0; i < 6; i++){
 		int num = i;
 		int a = num % 2; num /= 2;
@@ -1066,7 +1138,7 @@ should_chunk_be_rendered(chunk_t *c){
 	if(c->active_blocks == 0)
 		return 0;
 
-	return !is_chunk_surrounded(c) && !is_chunk_behind_camera(c);
+	return !is_chunk_surrounded(c) && !is_chunk_behind_camera(c) && !is_chunk_outside_2d_frustrum(c);
 }
 
 static void
@@ -1098,7 +1170,6 @@ static void
 update_visible_list(void) {
 	util_list_free(chunkmanager->visible_chunks);
 	chunkmanager->visible_chunks = util_list_create();
-
 	
 	linked_list_elm_t *elm;
 	elm = chunkmanager->loaded_chunks->head;
