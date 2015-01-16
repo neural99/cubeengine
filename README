@@ -4,3 +4,6 @@ Currently in early stages of development.
 Written in C and uses OpenGL and SDL for graphics.
 SDL_net is planned for the net code but multiplayer is 
 yet to be implmened.
+
+HOW TO BUILD ON MINGW:
+See http://lazyfoo.net/SDL_tutorials/lesson01/windows/mingw/index.php
